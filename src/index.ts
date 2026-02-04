@@ -12,7 +12,7 @@
  */
 
 // Lib exports
-export { env, type Env } from './lib/env.js';
+export { env } from './lib/env.js';
 export { logger } from './lib/logger.js';
 export { EventBus, serverEventBus, emitEntityEvent } from './lib/eventBus.js';
 export { getFirestore, getAuth, admin, db } from './lib/db.js';

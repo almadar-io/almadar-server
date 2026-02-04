@@ -14,7 +14,7 @@ type EventHandler = (payload: unknown, meta?: Record<string, unknown>) => void;
 /**
  * Simple EventBus implementation for server-side events
  */
-class EventBus {
+export class EventBus {
   private handlers: Map<string, Set<EventHandler>> = new Map();
   private debug: boolean;
 
