@@ -39,7 +39,7 @@
     "build:watch": "tsup --watch",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
-    "test": "vitest --run",
+    "test": "vitest --run --passWithNoTests",
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
