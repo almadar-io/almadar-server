@@ -54,6 +54,17 @@ export {
   type PaginatedResult,
 } from './services/DataService.js';
 
+// Stores exports
+export {
+  toFirestoreFormat,
+  fromFirestoreFormat,
+  SchemaStore,
+  SnapshotStore,
+  ChangeSetStore,
+  ValidationStore,
+  SchemaProtectionService,
+} from './stores/index.js';
+
 // Utils exports
 export {
   parseQueryFilters,

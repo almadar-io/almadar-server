@@ -23,6 +23,10 @@
       "import": "./dist/services/index.js",
       "types": "./dist/services/index.d.ts"
     },
+    "./stores": {
+      "import": "./dist/stores/index.js",
+      "types": "./dist/stores/index.d.ts"
+    },
     "./utils": {
       "import": "./dist/utils/index.js",
       "types": "./dist/utils/index.d.ts"
@@ -43,6 +47,7 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
+    "@almadar/core": "workspace:*",
     "@faker-js/faker": "^9.3.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",

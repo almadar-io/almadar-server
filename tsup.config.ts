@@ -6,6 +6,7 @@ export default defineConfig({
     'src/lib/index.ts',
     'src/middleware/index.ts',
     'src/services/index.ts',
+    'src/stores/index.ts',
     'src/utils/index.ts',
   ],
   format: ['esm'],
