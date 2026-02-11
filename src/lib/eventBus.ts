@@ -11,12 +11,23 @@
 
 type EventHandler = (payload: unknown, meta?: Record<string, unknown>) => void;
 
+export interface EventLogEntry {
+  event: string;
+  payload: unknown;
+  timestamp: number;
+  listenerCount: number;
+  wildcardListenerCount: number;
+}
+
+const MAX_EVENT_LOG = 200;
+
 /**
  * Simple EventBus implementation for server-side events
  */
 export class EventBus {
   private handlers: Map<string, Set<EventHandler>> = new Map();
   private debug: boolean;
+  private eventLog: EventLogEntry[] = [];
 
   constructor(options?: { debug?: boolean }) {
     this.debug = options?.debug ?? false;
@@ -44,6 +55,7 @@ export class EventBus {
     }
 
     const handlers = this.handlers.get(event);
+    const listenerCount = handlers?.size ?? 0;
     if (handlers) {
       handlers.forEach(handler => {
         try {
@@ -55,8 +67,10 @@ export class EventBus {
     }
 
     // Wildcard subscribers receive all events (used by WebSocket broadcast)
+    let wildcardListenerCount = 0;
     if (event !== '*') {
       const wildcardHandlers = this.handlers.get('*');
+      wildcardListenerCount = wildcardHandlers?.size ?? 0;
       if (wildcardHandlers) {
         wildcardHandlers.forEach(handler => {
           try {
@@ -67,10 +81,41 @@ export class EventBus {
         });
       }
     }
+
+    // Record event in log (dev diagnostics)
+    if (this.debug) {
+      this.eventLog.push({
+        event,
+        payload,
+        timestamp: Date.now(),
+        listenerCount,
+        wildcardListenerCount,
+      });
+      if (this.eventLog.length > MAX_EVENT_LOG) {
+        this.eventLog.splice(0, this.eventLog.length - MAX_EVENT_LOG);
+      }
+    }
+  }
+
+  getRecentEvents(limit = 50): EventLogEntry[] {
+    return this.eventLog.slice(-limit);
+  }
+
+  clearEventLog(): void {
+    this.eventLog.length = 0;
+  }
+
+  getListenerCounts(): Record<string, number> {
+    const counts: Record<string, number> = {};
+    this.handlers.forEach((handlers, event) => {
+      counts[event] = handlers.size;
+    });
+    return counts;
   }
 
   clear(): void {
     this.handlers.clear();
+    this.eventLog.length = 0;
   }
 }
 

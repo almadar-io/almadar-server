@@ -14,7 +14,8 @@
 // Lib exports
 export { env } from './lib/env.js';
 export { logger } from './lib/logger.js';
-export { EventBus, serverEventBus, emitEntityEvent } from './lib/eventBus.js';
+export { EventBus, serverEventBus, emitEntityEvent, type EventLogEntry } from './lib/eventBus.js';
+export { debugEventsRouter } from './lib/debugRouter.js';
 export { getFirestore, getAuth, admin, db } from './lib/db.js';
 export {
   setupEventBroadcast,
