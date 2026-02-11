@@ -1,12 +1,38 @@
 import { NextFunction, Request, Response } from 'express';
+import type { DecodedIdToken } from 'firebase-admin/auth';
 import { getAuth } from '../lib/db.js';
+import { env } from '../lib/env.js';
 
 const BEARER_PREFIX = 'Bearer ';
 
-export async function authenticateFirebase(req: Request, res: Response, next: NextFunction) {
-  try {
-    const authorization = req.headers.authorization;
+/** Fake dev user injected when NODE_ENV=development and no auth header is present */
+const DEV_USER: DecodedIdToken = {
+  uid: 'dev-user-001',
+  email: 'dev@localhost',
+  email_verified: true,
+  aud: 'dev-project',
+  auth_time: Math.floor(Date.now() / 1000),
+  exp: Math.floor(Date.now() / 1000) + 3600,
+  iat: Math.floor(Date.now() / 1000),
+  iss: 'https://securetoken.google.com/dev-project',
+  sub: 'dev-user-001',
+  firebase: {
+    identities: {},
+    sign_in_provider: 'custom',
+  },
+};
 
+export async function authenticateFirebase(req: Request, res: Response, next: NextFunction) {
+  const authorization = req.headers.authorization;
+
+  // Dev bypass: in development mode, skip auth if no token is provided
+  if (env.NODE_ENV === 'development' && (!authorization || !authorization.startsWith(BEARER_PREFIX))) {
+    req.firebaseUser = DEV_USER;
+    res.locals.firebaseUser = DEV_USER;
+    return next();
+  }
+
+  try {
     if (!authorization || !authorization.startsWith(BEARER_PREFIX)) {
       return res.status(401).json({ error: 'Authorization header missing or malformed' });
     }
