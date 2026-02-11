@@ -53,6 +53,20 @@ export class EventBus {
         }
       });
     }
+
+    // Wildcard subscribers receive all events (used by WebSocket broadcast)
+    if (event !== '*') {
+      const wildcardHandlers = this.handlers.get('*');
+      if (wildcardHandlers) {
+        wildcardHandlers.forEach(handler => {
+          try {
+            handler({ type: event, payload, timestamp: Date.now() }, meta);
+          } catch (err) {
+            console.error(`[EventBus] Error in wildcard handler for ${event}:`, err);
+          }
+        });
+      }
+    }
   }
 
   clear(): void {
