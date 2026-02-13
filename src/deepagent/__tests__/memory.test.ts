@@ -18,11 +18,11 @@ vi.mock('firebase-admin/firestore', () => ({
         delete: vi.fn(),
       })),
       where: vi.fn(() => ({
-        get: vi.fn(() => Promise.resolve({ docs: [] })),
+        get: vi.fn(() => Promise.resolve({ docs: [], empty: true })),
       })),
       orderBy: vi.fn(() => ({
         limit: vi.fn(() => ({
-          get: vi.fn(() => Promise.resolve({ docs: [] })),
+          get: vi.fn(() => Promise.resolve({ docs: [], empty: true })),
         })),
       })),
     })),
@@ -64,33 +64,36 @@ describe('MemoryManager Integration', () => {
   });
 
   describe('Memory Operations', () => {
-    it('should store user preferences', async () => {
+    it('should have updateUserPreferences method', async () => {
       const manager = getMemoryManager();
       const userId = 'test-user-123';
       
+      // Mock the method
+      vi.spyOn(manager, 'updateUserPreferences').mockResolvedValue(undefined);
+      
       const preferences = {
-        preferredColorScheme: 'dark',
-        defaultFramework: 'react',
+        namingConvention: 'camelCase' as const,
+        validationStyle: 'strict' as const,
       };
 
-      vi.spyOn(manager, 'storeUserPreference').mockResolvedValue(undefined);
+      await manager.updateUserPreferences(userId, preferences);
       
-      await manager.storeUserPreference(userId, 'colorScheme', preferences.preferredColorScheme);
-      
-      expect(manager.storeUserPreference).toHaveBeenCalledWith(
-        userId,
-        'colorScheme',
-        preferences.preferredColorScheme
-      );
+      expect(manager.updateUserPreferences).toHaveBeenCalledWith(userId, preferences);
     });
 
-    it('should retrieve user preferences', async () => {
+    it('should have getUserPreferences method', async () => {
       const manager = getMemoryManager();
       const userId = 'test-user-123';
       
       const mockPreferences = {
-        preferredColorScheme: 'dark',
-        defaultFramework: 'react',
+        id: 'pref-123',
+        userId,
+        namingConvention: 'PascalCase',
+        validationStyle: 'strict',
+        preferredPatterns: [],
+        avoidedPatterns: [],
+        customRules: [],
+        learnedAt: Date.now(),
       };
 
       vi.spyOn(manager, 'getUserPreferences').mockResolvedValue(mockPreferences);
@@ -98,69 +101,110 @@ describe('MemoryManager Integration', () => {
       const prefs = await manager.getUserPreferences(userId);
       
       expect(prefs).toEqual(mockPreferences);
+      expect(manager.getUserPreferences).toHaveBeenCalledWith(userId);
     });
 
-    it('should store project context', async () => {
+    it('should have recordGeneration method', async () => {
       const manager = getMemoryManager();
-      const projectId = 'project-456';
+      
+      vi.spyOn(manager, 'recordGeneration').mockResolvedValue(undefined);
+      
+      const session = {
+        id: 'gen-123',
+        userId: 'user-123',
+        appId: 'app-456',
+        description: 'Test generation',
+        status: 'in_progress' as const,
+        createdAt: Date.now(),
+      };
+
+      await manager.recordGeneration(session);
+      
+      expect(manager.recordGeneration).toHaveBeenCalledWith(session);
+    });
+
+    it('should have updateProjectContext method', async () => {
+      const manager = getMemoryManager();
+      
+      vi.spyOn(manager, 'updateProjectContext').mockResolvedValue(undefined);
       
       const context = {
+        appId: 'project-456',
         techStack: ['react', 'typescript'],
         patterns: ['mvc', 'repository'],
       };
 
-      vi.spyOn(manager, 'storeProjectContext').mockResolvedValue(undefined);
+      await manager.updateProjectContext(context);
       
-      await manager.storeProjectContext(projectId, context);
-      
-      expect(manager.storeProjectContext).toHaveBeenCalledWith(projectId, context);
+      expect(manager.updateProjectContext).toHaveBeenCalledWith(context);
     });
 
-    it('should record generation outcome', async () => {
+    it('should have recordFeedback method', async () => {
       const manager = getMemoryManager();
-      const userId = 'test-user-123';
       
-      const outcome = {
-        success: true,
-        patternUsed: 'component-generation',
-        quality: 0.95,
+      vi.spyOn(manager, 'recordFeedback').mockResolvedValue(undefined);
+      
+      const feedback = {
+        id: 'fb-123',
+        sessionId: 'session-456',
+        userId: 'user-123',
+        rating: 5,
+        timestamp: Date.now(),
       };
 
-      vi.spyOn(manager, 'recordGenerationOutcome').mockResolvedValue(undefined);
+      await manager.recordFeedback(feedback);
       
-      await manager.recordGenerationOutcome(userId, 'pattern-123', outcome);
-      
-      expect(manager.recordGenerationOutcome).toHaveBeenCalledWith(
-        userId,
-        'pattern-123',
-        outcome
-      );
+      expect(manager.recordFeedback).toHaveBeenCalledWith(feedback);
     });
   });
 
-  describe('Agentic Search', () => {
-    it('should perform agentic search', async () => {
+  describe('Pattern Management', () => {
+    it('should have updatePatternAffinity method', async () => {
       const manager = getMemoryManager();
-      const userId = 'test-user-123';
-      const query = 'authentication patterns';
-
-      const mockResults = {
-        results: [
-          { type: 'pattern', id: 'auth-1', relevance: 0.95 },
-          { type: 'memory', id: 'mem-1', relevance: 0.87 },
-        ],
-        insights: {
-          patterns: ['jwt-auth', 'session-auth'],
-          trends: ['increasing security focus'],
-        },
-      };
-
-      vi.spyOn(manager, 'agenticSearch').mockResolvedValue(mockResults);
       
-      const results = await manager.agenticSearch(userId, query);
+      vi.spyOn(manager, 'updatePatternAffinity').mockResolvedValue(undefined);
       
-      expect(results).toEqual(mockResults);
-      expect(manager.agenticSearch).toHaveBeenCalledWith(userId, query);
+      await manager.updatePatternAffinity('user-123', 'pattern-456', true);
+      
+      expect(manager.updatePatternAffinity).toHaveBeenCalledWith('user-123', 'pattern-456', true);
+    });
+
+    it('should have getUserPatterns method', async () => {
+      const manager = getMemoryManager();
+      
+      const mockPatterns = [
+        { id: 'p1', userId: 'user-123', patternId: 'auth', affinityScore: 0.9 },
+        { id: 'p2', userId: 'user-123', patternId: 'crud', affinityScore: 0.8 },
+      ];
+
+      vi.spyOn(manager, 'getUserPatterns').mockResolvedValue(mockPatterns as any);
+      
+      const patterns = await manager.getUserPatterns('user-123');
+      
+      expect(patterns).toEqual(mockPatterns);
+    });
+  });
+
+  describe('Interrupt Handling', () => {
+    it('should have recordInterruptDecision method', async () => {
+      const manager = getMemoryManager();
+      
+      vi.spyOn(manager, 'recordInterruptDecision').mockResolvedValue(undefined);
+      
+      await manager.recordInterruptDecision('user-123', 'tool-456', 'approve');
+      
+      expect(manager.recordInterruptDecision).toHaveBeenCalledWith('user-123', 'tool-456', 'approve');
+    });
+
+    it('should have shouldAutoApproveTool method', async () => {
+      const manager = getMemoryManager();
+      
+      vi.spyOn(manager, 'shouldAutoApproveTool').mockResolvedValue(true);
+      
+      const shouldApprove = await manager.shouldAutoApproveTool('user-123', 'file.write');
+      
+      expect(shouldApprove).toBe(true);
+      expect(manager.shouldAutoApproveTool).toHaveBeenCalledWith('user-123', 'file.write');
     });
   });
 });
