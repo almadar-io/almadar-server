@@ -6,10 +6,25 @@
  * @packageDocumentation
  */
 
-import type { Server as SocketServer } from 'socket.io';
 import { getStateSyncManager } from '@almadar/agent';
 import { getMultiUserManager } from '@almadar/agent';
 import { getAuth } from '../lib/db.js';
+
+// Type definitions for Socket.IO (to avoid dependency)
+interface Socket {
+  data: { user: { uid: string; roles: string[]; orgId?: string } };
+  handshake: { auth: { token: string; clientId: string } };
+  join: (room: string) => void;
+  leave: (room: string) => void;
+  on: (event: string, handler: (...args: unknown[]) => void) => void;
+  emit: (event: string, ...args: unknown[]) => void;
+  to: (room: string) => { emit: (event: string, ...args: unknown[]) => void };
+}
+
+interface SocketServer {
+  use: (middleware: (socket: Socket, next: (err?: Error) => void) => void) => void;
+  on: (event: string, handler: (socket: Socket) => void) => void;
+}
 
 /**
  * Set up state sync WebSocket with Firebase Auth
@@ -41,9 +56,9 @@ export function setupStateSyncWebSocket(io: SocketServer): void {
     }
   });
 
-  io.on('connection', (socket) => {
-    const userId = socket.data.user.uid as string;
-    const clientId = socket.handshake.auth.clientId as string;
+  io.on('connection', (socket: Socket) => {
+    const userId = socket.data.user.uid;
+    const clientId = socket.handshake.auth.clientId;
 
     console.log(`[StateSync] Client ${clientId} connected for user ${userId}`);
 
@@ -54,7 +69,9 @@ export function setupStateSyncWebSocket(io: SocketServer): void {
     socket.join(`user:${userId}`);
 
     // Listen for state changes from client
-    socket.on('stateChange', (event) => {
+    socket.on('stateChange', (...args: unknown[]) => {
+      const event = args[0] as { threadId: string };
+      
       // Verify ownership
       const multiUser = getMultiUserManager();
       if (!multiUser.isSessionOwner(event.threadId, userId)) {
@@ -63,14 +80,14 @@ export function setupStateSyncWebSocket(io: SocketServer): void {
       }
 
       // Process through sync manager
-      stateSync.receiveRemoteChange(event);
+      stateSync.receiveRemoteChange(event as unknown as import('@almadar/agent').StateChangeEvent);
 
       // Broadcast to other clients of same user
       socket.to(`user:${userId}`).emit('remoteChange', event);
     });
 
     // Handle sync required events from agent
-    stateSync.on('syncRequired', (changes) => {
+    stateSync.on('syncRequired', (changes: unknown[]) => {
       socket.emit('syncBatch', changes);
     });
 

@@ -75,3 +75,30 @@ export {
   type FirestoreWhereFilterOp,
   type PaginationParams,
 } from './utils/queryFilters.js';
+
+// DeepAgent exports (GAP implementations)
+export {
+  getMemoryManager,
+  resetMemoryManager,
+} from './deepagent/memory.js';
+export {
+  getSessionManager,
+  resetSessionManager,
+} from './deepagent/session.js';
+export {
+  createServerSkillAgent,
+  getMemoryManager as getAgentMemoryManager,
+  getSessionManager as getAgentSessionManager,
+} from './deepagent/skill-agent.js';
+
+// Multi-user middleware exports
+export {
+  multiUserMiddleware,
+  verifyFirebaseAuth,
+} from './middleware/multi-user.js';
+
+// WebSocket exports
+export { setupStateSyncWebSocket } from './websocket/state-sync.js';
+
+// Route exports
+export { default as observabilityRouter } from './routes/observability.js';
