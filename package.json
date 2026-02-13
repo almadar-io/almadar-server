@@ -1,6 +1,6 @@
 {
   "name": "@almadar/server",
-  "version": "1.0.18",
+  "version": "1.2.0",
   "description": "Shared server infrastructure for Almadar applications",
   "type": "module",
   "main": "./dist/index.js",
