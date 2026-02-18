@@ -10,6 +10,7 @@ import {
   createSkillAgent,
   getObservabilityCollector,
   getMultiUserManager,
+  createWorkflowToolWrapper,
   type SkillAgentOptions,
   type SkillAgentResult,
 } from '@almadar/agent';
@@ -48,12 +49,20 @@ export async function createServerSkillAgent(
   // Start observability
   observability.startSession(options.threadId ?? 'new', options.userId);
 
+  // Create workflow tool wrapper for retry/telemetry (always enabled)
+  const workflowToolWrapper = createWorkflowToolWrapper({
+    maxRetries: 2,
+    enableTelemetry: true,
+    timeoutMs: 300000, // 5 minutes
+  });
+
   try {
     const result = await createSkillAgent({
       ...options,
       memoryManager, // GAP-001: Enable memory
       userId: options.userId, // GAP-002D: Session → Memory sync
       appId: options.appId,
+      toolWrapper: workflowToolWrapper.wrap, // Always use workflow wrapper for reliability
     });
 
     // Assign ownership for new sessions
