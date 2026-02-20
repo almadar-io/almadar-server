@@ -39,7 +39,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "NODE_OPTIONS='--max-old-space-size=4096' tsup",
     "build:watch": "tsup --watch",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
