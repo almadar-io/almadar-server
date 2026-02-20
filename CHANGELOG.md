@@ -1,5 +1,11 @@
 # @almadar/server
 
+## 1.4.3
+
+### Patch Changes
+
+- @almadar/agent@1.6.2
+
 ## 1.4.1
 
 ### Patch Changes
