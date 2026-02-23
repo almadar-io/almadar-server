@@ -1,6 +1,6 @@
 {
   "name": "@almadar/server",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Shared server infrastructure for Almadar applications",
   "type": "module",
   "main": "./dist/index.js",
@@ -39,15 +39,14 @@
     "access": "public"
   },
   "scripts": {
-    "build": "NODE_OPTIONS='--max-old-space-size=4096' tsup",
+    "build": "tsup && tsc --declaration --emitDeclarationOnly --outDir dist --rootDir src --skipLibCheck || true",
     "build:watch": "tsup --watch",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
-    "test": "vitest --run --passWithNoTests",
-    "prepublishOnly": "pnpm run build"
+    "test": "vitest --run --passWithNoTests"
   },
   "dependencies": {
-    "@almadar/agent": ">=2.0.0",
+    "@almadar/agent": ">=2.0.1",
     "@almadar/core": ">=2.0.0",
     "@faker-js/faker": "^9.3.0",
     "cors": "^2.8.5",

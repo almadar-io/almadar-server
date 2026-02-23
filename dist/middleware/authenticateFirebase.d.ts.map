@@ -1,0 +1,1 @@
+{"version":3,"file":"authenticateFirebase.d.ts","sourceRoot":"","sources":["../../src/middleware/authenticateFirebase.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,YAAY,EAAE,OAAO,EAAE,QAAQ,EAAE,MAAM,SAAS,CAAC;AAwB1D,wBAAsB,oBAAoB,CAAC,GAAG,EAAE,OAAO,EAAE,GAAG,EAAE,QAAQ,EAAE,IAAI,EAAE,YAAY,sDA0BzF;AAED,eAAe,oBAAoB,CAAC"}
