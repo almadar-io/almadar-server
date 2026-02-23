@@ -16,7 +16,7 @@ export default defineConfig({
     'src/routes/observability.ts',
   ],
   format: ['esm'],
-  dts: true,
+  dts: false,
   clean: true,
   sourcemap: true,
   splitting: false,
