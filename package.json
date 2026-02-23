@@ -1,6 +1,6 @@
 {
   "name": "@almadar/server",
-  "version": "1.4.5",
+  "version": "2.0.0",
   "description": "Shared server infrastructure for Almadar applications",
   "type": "module",
   "main": "./dist/index.js",
@@ -47,8 +47,8 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@almadar/agent": "workspace:*",
-    "@almadar/core": "workspace:*",
+    "@almadar/agent": ">=2.0.0",
+    "@almadar/core": ">=2.0.0",
     "@faker-js/faker": "^9.3.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",
@@ -73,8 +73,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/almadar-io/almadar.git",
-    "directory": "packages/almadar-server"
+    "url": "https://github.com/almadar-io/almadar-server.git"
   },
   "license": "MIT",
   "keywords": [
