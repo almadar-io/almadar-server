@@ -104,6 +104,7 @@ export declare class MockDataService {
      */
     count(entityName: string): number;
 }
-export declare const mockDataService: MockDataService;
+export declare function getMockDataService(): MockDataService;
+export declare function resetMockDataService(): void;
 export {};
 //# sourceMappingURL=MockDataService.d.ts.map

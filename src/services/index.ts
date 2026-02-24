@@ -4,5 +4,5 @@
  * @packageDocumentation
  */
 
-export { mockDataService, type FieldSchema, type EntitySchema } from './MockDataService.js';
-export { dataService, seedMockData, type DataService, type EntitySeedConfig } from './DataService.js';
+export { MockDataService, getMockDataService, resetMockDataService, type FieldSchema, type EntitySchema } from './MockDataService.js';
+export { getDataService, resetDataService, seedMockData, type DataService, type EntitySeedConfig } from './DataService.js';

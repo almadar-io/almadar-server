@@ -14,7 +14,7 @@
 // Lib exports
 export { env } from './lib/env.js';
 export { logger } from './lib/logger.js';
-export { EventBus, serverEventBus, emitEntityEvent, type EventLogEntry } from './lib/eventBus.js';
+export { EventBus, getServerEventBus, resetServerEventBus, emitEntityEvent, type EventLogEntry } from './lib/eventBus.js';
 export {
   DistributedEventBus,
   InMemoryTransport,
@@ -58,13 +58,15 @@ export { authenticateFirebase } from './middleware/authenticateFirebase.js';
 
 // Services exports
 export {
-  mockDataService,
   MockDataService,
+  getMockDataService,
+  resetMockDataService,
   type FieldSchema,
   type EntitySchema,
 } from './services/MockDataService.js';
 export {
-  dataService,
+  getDataService,
+  resetDataService,
   seedMockData,
   type DataService,
   type EntitySeedConfig,
@@ -125,6 +127,17 @@ export {
   type ServiceRegistryOptions,
   type IServiceRegistry,
 } from './lib/serviceDiscovery.js';
+
+// Contract exports
+export type {
+  DataServiceActions,
+  DataServiceContract,
+  EventBusActions,
+  EventBusServiceContract,
+  ServiceDiscoveryActions,
+  ServiceDiscoveryContract,
+  ServerServiceContracts,
+} from './contracts.js';
 
 // Route exports
 export { default as observabilityRouter } from './routes/observability.js';

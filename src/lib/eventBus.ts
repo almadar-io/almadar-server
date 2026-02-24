@@ -120,11 +120,23 @@ export class EventBus {
 }
 
 /**
- * Singleton EventBus instance for server-side event communication.
+ * Lazy singleton EventBus instance for server-side event communication.
  */
-export const serverEventBus = new EventBus({
-  debug: process.env.NODE_ENV === 'development',
-});
+let _serverEventBus: EventBus | null = null;
+
+export function getServerEventBus(): EventBus {
+  if (!_serverEventBus) {
+    _serverEventBus = new EventBus({
+      debug: process.env.NODE_ENV === 'development',
+    });
+  }
+  return _serverEventBus;
+}
+
+export function resetServerEventBus(): void {
+  _serverEventBus?.clear();
+  _serverEventBus = null;
+}
 
 /**
  * Type-safe event emission helper
@@ -135,5 +147,5 @@ export function emitEntityEvent(
   payload: Record<string, unknown>
 ): void {
   const eventType = `${entityType.toUpperCase()}_${action}`;
-  serverEventBus.emit(eventType, payload, { orbital: entityType });
+  getServerEventBus().emit(eventType, payload, { orbital: entityType });
 }

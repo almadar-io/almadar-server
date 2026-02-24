@@ -181,12 +181,22 @@ var EventBus = class {
     this.eventLog.length = 0;
   }
 };
-var serverEventBus = new EventBus({
-  debug: process.env.NODE_ENV === "development"
-});
+var _serverEventBus = null;
+function getServerEventBus() {
+  if (!_serverEventBus) {
+    _serverEventBus = new EventBus({
+      debug: process.env.NODE_ENV === "development"
+    });
+  }
+  return _serverEventBus;
+}
+function resetServerEventBus() {
+  _serverEventBus?.clear();
+  _serverEventBus = null;
+}
 function emitEntityEvent(entityType, action, payload) {
   const eventType = `${entityType.toUpperCase()}_${action}`;
-  serverEventBus.emit(eventType, payload, { orbital: entityType });
+  getServerEventBus().emit(eventType, payload, { orbital: entityType });
 }
 var wss = null;
 function setupEventBroadcast(server, path = "/ws/events") {
@@ -211,7 +221,7 @@ function setupEventBroadcast(server, path = "/ws/events") {
         const message = JSON.parse(data.toString());
         logger.debug(`[WebSocket] Received from ${clientId}:`, message);
         if (message.type && message.payload) {
-          serverEventBus.emit(message.type, message.payload, {
+          getServerEventBus().emit(message.type, message.payload, {
             orbital: "client",
             entity: clientId
           });
@@ -227,7 +237,7 @@ function setupEventBroadcast(server, path = "/ws/events") {
       logger.error(`[WebSocket] Client error:`, error);
     });
   });
-  serverEventBus.on("*", (event) => {
+  getServerEventBus().on("*", (event) => {
     if (!wss) return;
     const typedEvent = event;
     const message = JSON.stringify({
@@ -273,6 +283,6 @@ function getConnectedClientCount() {
   return wss.clients.size;
 }
 
-export { closeWebSocketServer, emitEntityEvent, env, getAuth, getConnectedClientCount, getFirestore, getWebSocketServer, logger, serverEventBus, setupEventBroadcast };
+export { closeWebSocketServer, emitEntityEvent, env, getAuth, getConnectedClientCount, getFirestore, getServerEventBus, getWebSocketServer, logger, resetServerEventBus, setupEventBroadcast };
 //# sourceMappingURL=index.js.map
 //# sourceMappingURL=index.js.map

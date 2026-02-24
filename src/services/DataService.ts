@@ -7,10 +7,11 @@
  * @packageDocumentation
  */
 
+import type { StoreContract, StoreFilter } from '@almadar/core';
 import { db } from '../lib/db.js';
 import { env } from '../lib/env.js';
 import { logger } from '../lib/logger.js';
-import { mockDataService, type FieldSchema } from './MockDataService.js';
+import { getMockDataService, type FieldSchema } from './MockDataService.js';
 import {
   parseQueryFilters,
   applyFiltersToQuery,
@@ -65,6 +66,9 @@ export interface DataService {
   create<T extends BaseEntity>(collection: string, data: Partial<T>): Promise<T>;
   update<T extends BaseEntity>(collection: string, id: string, data: Partial<T>): Promise<T | null>;
   delete(collection: string, id: string): Promise<boolean>;
+  query<T>(collection: string, filters: StoreFilter<T>[]): Promise<T[]>;
+  /** Get a typed StoreContract<T> bound to a specific collection. */
+  getStore<T extends BaseEntity>(collection: string): StoreContract<T>;
 }
 
 /**
@@ -116,7 +120,7 @@ function applyFilterCondition(value: unknown, operator: string, filterValue: unk
  */
 class MockDataServiceAdapter implements DataService {
   async list<T>(collection: string): Promise<T[]> {
-    return mockDataService.list<T>(collection);
+    return getMockDataService().list<T>(collection);
   }
 
   async listPaginated<T>(
@@ -133,7 +137,7 @@ class MockDataServiceAdapter implements DataService {
       filters,
     } = options;
 
-    let items = mockDataService.list<T>(collection);
+    let items = getMockDataService().list<T>(collection);
 
     // Apply field filters (server-side filtering)
     if (filters && filters.length > 0) {
@@ -182,11 +186,11 @@ class MockDataServiceAdapter implements DataService {
   }
 
   async getById<T>(collection: string, id: string): Promise<T | null> {
-    return mockDataService.getById<T>(collection, id);
+    return getMockDataService().getById<T>(collection, id);
   }
 
   async create<T extends BaseEntity>(collection: string, data: Partial<T>): Promise<T> {
-    return mockDataService.create<T>(collection, data);
+    return getMockDataService().create<T>(collection, data);
   }
 
   async update<T extends BaseEntity>(
@@ -194,11 +198,45 @@ class MockDataServiceAdapter implements DataService {
     id: string,
     data: Partial<T>
   ): Promise<T | null> {
-    return mockDataService.update<T>(collection, id, data);
+    return getMockDataService().update<T>(collection, id, data);
   }
 
   async delete(collection: string, id: string): Promise<boolean> {
-    return mockDataService.delete(collection, id);
+    return getMockDataService().delete(collection, id);
+  }
+
+  async query<T>(collection: string, filters: StoreFilter<T>[]): Promise<T[]> {
+    let items = getMockDataService().list<T>(collection);
+    for (const filter of filters) {
+      items = items.filter((item) => {
+        const value = (item as Record<string, unknown>)[filter.field];
+        return applyFilterCondition(value, filter.op, filter.value);
+      });
+    }
+    return items;
+  }
+
+  getStore<T extends BaseEntity>(collection: string): StoreContract<T> {
+    const adapter = this;
+    return {
+      async getById(id: string): Promise<T | null> {
+        return adapter.getById<T>(collection, id);
+      },
+      async create(data: Omit<T, 'id'>): Promise<T> {
+        return adapter.create<T>(collection, data as Partial<T>);
+      },
+      async update(id: string, data: Partial<T>): Promise<T> {
+        const result = await adapter.update<T>(collection, id, data);
+        if (!result) throw new Error(`Entity ${id} not found in ${collection}`);
+        return result;
+      },
+      async delete(id: string): Promise<void> {
+        adapter.delete(collection, id);
+      },
+      async query(filters: StoreFilter<T>[]): Promise<T[]> {
+        return adapter.query<T>(collection, filters);
+      },
+    };
   }
 }
 
@@ -348,6 +386,59 @@ class FirebaseDataService implements DataService {
     await docRef.delete();
     return true;
   }
+
+  async query<T>(collection: string, filters: StoreFilter<T>[]): Promise<T[]> {
+    let query: FirebaseFirestore.Query = db.collection(collection);
+
+    // Apply filters that Firestore supports natively
+    const memoryFilters: StoreFilter<T>[] = [];
+    for (const filter of filters) {
+      if (['==', '!=', '<', '<=', '>', '>=', 'in', 'not-in'].includes(filter.op)) {
+        query = query.where(filter.field, filter.op as FirebaseFirestore.WhereFilterOp, filter.value);
+      } else {
+        memoryFilters.push(filter);
+      }
+    }
+
+    const snapshot = await query.get();
+    let items = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as T[];
+
+    // Apply remaining filters in memory (e.g., 'contains')
+    for (const filter of memoryFilters) {
+      items = items.filter((item) => {
+        const value = (item as Record<string, unknown>)[filter.field];
+        return applyFilterCondition(value, filter.op, filter.value);
+      });
+    }
+
+    return items;
+  }
+
+  getStore<T extends BaseEntity>(collection: string): StoreContract<T> {
+    const svc = this;
+    return {
+      async getById(id: string): Promise<T | null> {
+        return svc.getById<T>(collection, id);
+      },
+      async create(data: Omit<T, 'id'>): Promise<T> {
+        return svc.create<T>(collection, data as Partial<T>);
+      },
+      async update(id: string, data: Partial<T>): Promise<T> {
+        const result = await svc.update<T>(collection, id, data);
+        if (!result) throw new Error(`Entity ${id} not found in ${collection}`);
+        return result;
+      },
+      async delete(id: string): Promise<void> {
+        await svc.delete(collection, id);
+      },
+      async query(filters: StoreFilter<T>[]): Promise<T[]> {
+        return svc.query<T>(collection, filters);
+      },
+    };
+  }
 }
 
 // ============================================================================
@@ -367,10 +458,20 @@ function createDataService(): DataService {
 }
 
 /**
- * Singleton data service instance.
- * Use this in handlers for all data operations.
+ * Lazy singleton data service instance.
  */
-export const dataService = createDataService();
+let _dataService: DataService | null = null;
+
+export function getDataService(): DataService {
+  if (!_dataService) {
+    _dataService = createDataService();
+  }
+  return _dataService;
+}
+
+export function resetDataService(): void {
+  _dataService = null;
+}
 
 // ============================================================================
 // Seeding Helper
@@ -395,7 +496,7 @@ export function seedMockData(entities: EntitySeedConfig[]): void {
   logger.info('[DataService] Seeding mock data...');
 
   for (const entity of entities) {
-    mockDataService.seed(entity.name, entity.fields, entity.seedCount);
+    getMockDataService().seed(entity.name, entity.fields, entity.seedCount);
   }
 
   logger.info('[DataService] Mock data seeding complete');

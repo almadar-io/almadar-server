@@ -13,7 +13,7 @@
  */
 
 import { Router } from 'express';
-import { serverEventBus } from './eventBus.js';
+import { getServerEventBus } from './eventBus.js';
 
 /**
  * Creates an Express router with debug endpoints for the server EventBus.
@@ -28,17 +28,17 @@ export function debugEventsRouter(): Router {
 
   router.get('/event-log', (_req, res) => {
     const limit = parseInt(String(_req.query.limit) || '50', 10);
-    const events = serverEventBus.getRecentEvents(limit);
+    const events = getServerEventBus().getRecentEvents(limit);
     res.json({ count: events.length, events });
   });
 
   router.delete('/event-log', (_req, res) => {
-    serverEventBus.clearEventLog();
+    getServerEventBus().clearEventLog();
     res.json({ cleared: true });
   });
 
   router.get('/listeners', (_req, res) => {
-    const counts = serverEventBus.getListenerCounts();
+    const counts = getServerEventBus().getListenerCounts();
     const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
     res.json({ total, events: counts });
   });

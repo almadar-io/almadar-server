@@ -169,12 +169,22 @@ var EventBus = class {
     this.eventLog.length = 0;
   }
 };
-var serverEventBus = new EventBus({
-  debug: process.env.NODE_ENV === "development"
-});
+var _serverEventBus = null;
+function getServerEventBus() {
+  if (!_serverEventBus) {
+    _serverEventBus = new EventBus({
+      debug: process.env.NODE_ENV === "development"
+    });
+  }
+  return _serverEventBus;
+}
+function resetServerEventBus() {
+  _serverEventBus?.clear();
+  _serverEventBus = null;
+}
 function emitEntityEvent(entityType, action, payload) {
   const eventType = `${entityType.toUpperCase()}_${action}`;
-  serverEventBus.emit(eventType, payload, { orbital: entityType });
+  getServerEventBus().emit(eventType, payload, { orbital: entityType });
 }
 
 // src/lib/eventBusTransport.ts
@@ -449,15 +459,15 @@ function debugEventsRouter() {
   }
   router2.get("/event-log", (_req, res) => {
     const limit = parseInt(String(_req.query.limit) || "50", 10);
-    const events = serverEventBus.getRecentEvents(limit);
+    const events = getServerEventBus().getRecentEvents(limit);
     res.json({ count: events.length, events });
   });
   router2.delete("/event-log", (_req, res) => {
-    serverEventBus.clearEventLog();
+    getServerEventBus().clearEventLog();
     res.json({ cleared: true });
   });
   router2.get("/listeners", (_req, res) => {
-    const counts = serverEventBus.getListenerCounts();
+    const counts = getServerEventBus().getListenerCounts();
     const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
     res.json({ total, events: counts });
   });
@@ -550,7 +560,7 @@ function setupEventBroadcast(server, path = "/ws/events") {
         const message = JSON.parse(data.toString());
         logger.debug(`[WebSocket] Received from ${clientId}:`, message);
         if (message.type && message.payload) {
-          serverEventBus.emit(message.type, message.payload, {
+          getServerEventBus().emit(message.type, message.payload, {
             orbital: "client",
             entity: clientId
           });
@@ -566,7 +576,7 @@ function setupEventBroadcast(server, path = "/ws/events") {
       logger.error(`[WebSocket] Client error:`, error);
     });
   });
-  serverEventBus.on("*", (event) => {
+  getServerEventBus().on("*", (event) => {
     if (!wss) return;
     const typedEvent = event;
     const message = JSON.stringify({
@@ -1037,7 +1047,17 @@ var MockDataService = class {
     return store.size;
   }
 };
-var mockDataService = new MockDataService();
+var _mockDataService = null;
+function getMockDataService() {
+  if (!_mockDataService) {
+    _mockDataService = new MockDataService();
+  }
+  return _mockDataService;
+}
+function resetMockDataService() {
+  _mockDataService?.clearAll();
+  _mockDataService = null;
+}
 
 // src/utils/queryFilters.ts
 var OPERATOR_MAP = {
@@ -1174,7 +1194,7 @@ function applyFilterCondition(value, operator, filterValue) {
 }
 var MockDataServiceAdapter = class {
   async list(collection) {
-    return mockDataService.list(collection);
+    return getMockDataService().list(collection);
   }
   async listPaginated(collection, options = {}) {
     const {
@@ -1186,7 +1206,7 @@ var MockDataServiceAdapter = class {
       sortOrder = "asc",
       filters
     } = options;
-    let items = mockDataService.list(collection);
+    let items = getMockDataService().list(collection);
     if (filters && filters.length > 0) {
       items = items.filter((item) => {
         const record = item;
@@ -1226,16 +1246,48 @@ var MockDataServiceAdapter = class {
     return { data, total, page, pageSize, totalPages };
   }
   async getById(collection, id) {
-    return mockDataService.getById(collection, id);
+    return getMockDataService().getById(collection, id);
   }
   async create(collection, data) {
-    return mockDataService.create(collection, data);
+    return getMockDataService().create(collection, data);
   }
   async update(collection, id, data) {
-    return mockDataService.update(collection, id, data);
+    return getMockDataService().update(collection, id, data);
   }
   async delete(collection, id) {
-    return mockDataService.delete(collection, id);
+    return getMockDataService().delete(collection, id);
+  }
+  async query(collection, filters) {
+    let items = getMockDataService().list(collection);
+    for (const filter of filters) {
+      items = items.filter((item) => {
+        const value = item[filter.field];
+        return applyFilterCondition(value, filter.op, filter.value);
+      });
+    }
+    return items;
+  }
+  getStore(collection) {
+    const adapter = this;
+    return {
+      async getById(id) {
+        return adapter.getById(collection, id);
+      },
+      async create(data) {
+        return adapter.create(collection, data);
+      },
+      async update(id, data) {
+        const result = await adapter.update(collection, id, data);
+        if (!result) throw new Error(`Entity ${id} not found in ${collection}`);
+        return result;
+      },
+      async delete(id) {
+        adapter.delete(collection, id);
+      },
+      async query(filters) {
+        return adapter.query(collection, filters);
+      }
+    };
   }
 };
 var FirebaseDataService = class {
@@ -1345,6 +1397,51 @@ var FirebaseDataService = class {
     await docRef.delete();
     return true;
   }
+  async query(collection, filters) {
+    let query = db.collection(collection);
+    const memoryFilters = [];
+    for (const filter of filters) {
+      if (["==", "!=", "<", "<=", ">", ">=", "in", "not-in"].includes(filter.op)) {
+        query = query.where(filter.field, filter.op, filter.value);
+      } else {
+        memoryFilters.push(filter);
+      }
+    }
+    const snapshot = await query.get();
+    let items = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    for (const filter of memoryFilters) {
+      items = items.filter((item) => {
+        const value = item[filter.field];
+        return applyFilterCondition(value, filter.op, filter.value);
+      });
+    }
+    return items;
+  }
+  getStore(collection) {
+    const svc = this;
+    return {
+      async getById(id) {
+        return svc.getById(collection, id);
+      },
+      async create(data) {
+        return svc.create(collection, data);
+      },
+      async update(id, data) {
+        const result = await svc.update(collection, id, data);
+        if (!result) throw new Error(`Entity ${id} not found in ${collection}`);
+        return result;
+      },
+      async delete(id) {
+        await svc.delete(collection, id);
+      },
+      async query(filters) {
+        return svc.query(collection, filters);
+      }
+    };
+  }
 };
 function createDataService() {
   if (env.USE_MOCK_DATA) {
@@ -1354,7 +1451,16 @@ function createDataService() {
   logger.info("[DataService] Using FirebaseDataService");
   return new FirebaseDataService();
 }
-var dataService = createDataService();
+var _dataService = null;
+function getDataService() {
+  if (!_dataService) {
+    _dataService = createDataService();
+  }
+  return _dataService;
+}
+function resetDataService() {
+  _dataService = null;
+}
 function seedMockData(entities) {
   if (!env.USE_MOCK_DATA) {
     logger.info("[DataService] Mock mode disabled, skipping seed");
@@ -1362,7 +1468,7 @@ function seedMockData(entities) {
   }
   logger.info("[DataService] Seeding mock data...");
   for (const entity of entities) {
-    mockDataService.seed(entity.name, entity.fields, entity.seedCount);
+    getMockDataService().seed(entity.name, entity.fields, entity.seedCount);
   }
   logger.info("[DataService] Mock data seeding complete");
 }
@@ -2265,6 +2371,6 @@ router.get("/active-sessions", async (req, res) => {
 });
 var observability_default = router;
 
-export { AppError, ChangeSetStore, ConflictError, DistributedEventBus, EventBus, EventPersistence, ForbiddenError, InMemoryEventStore, InMemoryServiceRegistry, InMemoryTransport, MockDataService, NotFoundError, RedisTransport, SchemaProtectionService, SchemaStore, ServiceDiscovery, SnapshotStore, UnauthorizedError, ValidationError, ValidationStore, applyFiltersToQuery, asyncHandler, authenticateFirebase, closeWebSocketServer, createServerSkillAgent, dataService, db, debugEventsRouter, emitEntityEvent, env, errorHandler, extractPaginationParams, fromFirestoreFormat, getMemoryManager as getAgentMemoryManager, getSessionManager as getAgentSessionManager, getAuth, getConnectedClientCount, getFirestore, getMemoryManager, getSessionManager, getWebSocketServer, initializeFirebase, logger, mockDataService, multiUserMiddleware, notFoundHandler, observability_default as observabilityRouter, parseQueryFilters, resetMemoryManager, resetSessionManager, seedMockData, serverEventBus, setupEventBroadcast, setupStateSyncWebSocket, toFirestoreFormat, validateBody, validateParams, validateQuery, verifyFirebaseAuth };
+export { AppError, ChangeSetStore, ConflictError, DistributedEventBus, EventBus, EventPersistence, ForbiddenError, InMemoryEventStore, InMemoryServiceRegistry, InMemoryTransport, MockDataService, NotFoundError, RedisTransport, SchemaProtectionService, SchemaStore, ServiceDiscovery, SnapshotStore, UnauthorizedError, ValidationError, ValidationStore, applyFiltersToQuery, asyncHandler, authenticateFirebase, closeWebSocketServer, createServerSkillAgent, db, debugEventsRouter, emitEntityEvent, env, errorHandler, extractPaginationParams, fromFirestoreFormat, getMemoryManager as getAgentMemoryManager, getSessionManager as getAgentSessionManager, getAuth, getConnectedClientCount, getDataService, getFirestore, getMemoryManager, getMockDataService, getServerEventBus, getSessionManager, getWebSocketServer, initializeFirebase, logger, multiUserMiddleware, notFoundHandler, observability_default as observabilityRouter, parseQueryFilters, resetDataService, resetMemoryManager, resetMockDataService, resetServerEventBus, resetSessionManager, seedMockData, setupEventBroadcast, setupStateSyncWebSocket, toFirestoreFormat, validateBody, validateParams, validateQuery, verifyFirebaseAuth };
 //# sourceMappingURL=index.js.map
 //# sourceMappingURL=index.js.map

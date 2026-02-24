@@ -326,7 +326,17 @@ var MockDataService = class {
     return store.size;
   }
 };
-var mockDataService = new MockDataService();
+var _mockDataService = null;
+function getMockDataService() {
+  if (!_mockDataService) {
+    _mockDataService = new MockDataService();
+  }
+  return _mockDataService;
+}
+function resetMockDataService() {
+  _mockDataService?.clearAll();
+  _mockDataService = null;
+}
 function getApp() {
   if (admin.apps.length === 0) {
     throw new Error(
@@ -391,7 +401,7 @@ function applyFilterCondition(value, operator, filterValue) {
 }
 var MockDataServiceAdapter = class {
   async list(collection) {
-    return mockDataService.list(collection);
+    return getMockDataService().list(collection);
   }
   async listPaginated(collection, options = {}) {
     const {
@@ -403,7 +413,7 @@ var MockDataServiceAdapter = class {
       sortOrder = "asc",
       filters
     } = options;
-    let items = mockDataService.list(collection);
+    let items = getMockDataService().list(collection);
     if (filters && filters.length > 0) {
       items = items.filter((item) => {
         const record = item;
@@ -443,16 +453,48 @@ var MockDataServiceAdapter = class {
     return { data, total, page, pageSize, totalPages };
   }
   async getById(collection, id) {
-    return mockDataService.getById(collection, id);
+    return getMockDataService().getById(collection, id);
   }
   async create(collection, data) {
-    return mockDataService.create(collection, data);
+    return getMockDataService().create(collection, data);
   }
   async update(collection, id, data) {
-    return mockDataService.update(collection, id, data);
+    return getMockDataService().update(collection, id, data);
   }
   async delete(collection, id) {
-    return mockDataService.delete(collection, id);
+    return getMockDataService().delete(collection, id);
+  }
+  async query(collection, filters) {
+    let items = getMockDataService().list(collection);
+    for (const filter of filters) {
+      items = items.filter((item) => {
+        const value = item[filter.field];
+        return applyFilterCondition(value, filter.op, filter.value);
+      });
+    }
+    return items;
+  }
+  getStore(collection) {
+    const adapter = this;
+    return {
+      async getById(id) {
+        return adapter.getById(collection, id);
+      },
+      async create(data) {
+        return adapter.create(collection, data);
+      },
+      async update(id, data) {
+        const result = await adapter.update(collection, id, data);
+        if (!result) throw new Error(`Entity ${id} not found in ${collection}`);
+        return result;
+      },
+      async delete(id) {
+        adapter.delete(collection, id);
+      },
+      async query(filters) {
+        return adapter.query(collection, filters);
+      }
+    };
   }
 };
 var FirebaseDataService = class {
@@ -562,6 +604,51 @@ var FirebaseDataService = class {
     await docRef.delete();
     return true;
   }
+  async query(collection, filters) {
+    let query = db.collection(collection);
+    const memoryFilters = [];
+    for (const filter of filters) {
+      if (["==", "!=", "<", "<=", ">", ">=", "in", "not-in"].includes(filter.op)) {
+        query = query.where(filter.field, filter.op, filter.value);
+      } else {
+        memoryFilters.push(filter);
+      }
+    }
+    const snapshot = await query.get();
+    let items = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    for (const filter of memoryFilters) {
+      items = items.filter((item) => {
+        const value = item[filter.field];
+        return applyFilterCondition(value, filter.op, filter.value);
+      });
+    }
+    return items;
+  }
+  getStore(collection) {
+    const svc = this;
+    return {
+      async getById(id) {
+        return svc.getById(collection, id);
+      },
+      async create(data) {
+        return svc.create(collection, data);
+      },
+      async update(id, data) {
+        const result = await svc.update(collection, id, data);
+        if (!result) throw new Error(`Entity ${id} not found in ${collection}`);
+        return result;
+      },
+      async delete(id) {
+        await svc.delete(collection, id);
+      },
+      async query(filters) {
+        return svc.query(collection, filters);
+      }
+    };
+  }
 };
 function createDataService() {
   if (env.USE_MOCK_DATA) {
@@ -571,7 +658,16 @@ function createDataService() {
   logger.info("[DataService] Using FirebaseDataService");
   return new FirebaseDataService();
 }
-var dataService = createDataService();
+var _dataService = null;
+function getDataService() {
+  if (!_dataService) {
+    _dataService = createDataService();
+  }
+  return _dataService;
+}
+function resetDataService() {
+  _dataService = null;
+}
 function seedMockData(entities) {
   if (!env.USE_MOCK_DATA) {
     logger.info("[DataService] Mock mode disabled, skipping seed");
@@ -579,11 +675,11 @@ function seedMockData(entities) {
   }
   logger.info("[DataService] Seeding mock data...");
   for (const entity of entities) {
-    mockDataService.seed(entity.name, entity.fields, entity.seedCount);
+    getMockDataService().seed(entity.name, entity.fields, entity.seedCount);
   }
   logger.info("[DataService] Mock data seeding complete");
 }
 
-export { dataService, mockDataService, seedMockData };
+export { MockDataService, getDataService, getMockDataService, resetDataService, resetMockDataService, seedMockData };
 //# sourceMappingURL=index.js.map
 //# sourceMappingURL=index.js.map

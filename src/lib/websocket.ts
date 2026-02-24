@@ -9,7 +9,7 @@
 
 import { WebSocketServer, WebSocket, type RawData } from 'ws';
 import type { Server, IncomingMessage } from 'http';
-import { serverEventBus } from './eventBus.js';
+import { getServerEventBus } from './eventBus.js';
 import { logger } from './logger.js';
 
 /**
@@ -77,7 +77,7 @@ export function setupEventBroadcast(server: Server, path: string = '/ws/events')
         // Handle client-to-server events if needed
         if (message.type && message.payload) {
           // Emit to server event bus with client source
-          serverEventBus.emit(message.type, message.payload, {
+          getServerEventBus().emit(message.type, message.payload, {
             orbital: 'client',
             entity: clientId,
           });
@@ -97,7 +97,7 @@ export function setupEventBroadcast(server: Server, path: string = '/ws/events')
   });
 
   // Subscribe to all server events and broadcast to clients
-  serverEventBus.on('*', (event: unknown) => {
+  getServerEventBus().on('*', (event: unknown) => {
     if (!wss) return;
 
     const typedEvent = event as BroadcastEvent;

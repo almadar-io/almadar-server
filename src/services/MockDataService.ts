@@ -343,5 +343,17 @@ export class MockDataService {
   }
 }
 
-// Singleton instance
-export const mockDataService = new MockDataService();
+// Lazy singleton instance
+let _mockDataService: MockDataService | null = null;
+
+export function getMockDataService(): MockDataService {
+  if (!_mockDataService) {
+    _mockDataService = new MockDataService();
+  }
+  return _mockDataService;
+}
+
+export function resetMockDataService(): void {
+  _mockDataService?.clearAll();
+  _mockDataService = null;
+}

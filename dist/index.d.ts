@@ -12,7 +12,7 @@
  */
 export { env } from './lib/env.js';
 export { logger } from './lib/logger.js';
-export { EventBus, serverEventBus, emitEntityEvent, type EventLogEntry } from './lib/eventBus.js';
+export { EventBus, getServerEventBus, resetServerEventBus, emitEntityEvent, type EventLogEntry } from './lib/eventBus.js';
 export { DistributedEventBus, InMemoryTransport, RedisTransport, type IEventBusTransport, type TransportMessage, type TransportReceiver, type RedisTransportOptions, } from './lib/eventBusTransport.js';
 export { EventPersistence, InMemoryEventStore, type PersistedEvent, type EventQuery, type EventPersistenceOptions, type IEventStore, } from './lib/eventPersistence.js';
 export { debugEventsRouter } from './lib/debugRouter.js';
@@ -21,8 +21,8 @@ export { setupEventBroadcast, getWebSocketServer, closeWebSocketServer, getConne
 export { errorHandler, notFoundHandler, asyncHandler, AppError, NotFoundError, ValidationError, UnauthorizedError, ForbiddenError, ConflictError, } from './middleware/errorHandler.js';
 export { validateBody, validateQuery, validateParams } from './middleware/validation.js';
 export { authenticateFirebase } from './middleware/authenticateFirebase.js';
-export { mockDataService, MockDataService, type FieldSchema, type EntitySchema, } from './services/MockDataService.js';
-export { dataService, seedMockData, type DataService, type EntitySeedConfig, type PaginationOptions, type PaginatedResult, } from './services/DataService.js';
+export { MockDataService, getMockDataService, resetMockDataService, type FieldSchema, type EntitySchema, } from './services/MockDataService.js';
+export { getDataService, resetDataService, seedMockData, type DataService, type EntitySeedConfig, type PaginationOptions, type PaginatedResult, } from './services/DataService.js';
 export { toFirestoreFormat, fromFirestoreFormat, SchemaStore, SnapshotStore, ChangeSetStore, ValidationStore, SchemaProtectionService, } from './stores/index.js';
 export { parseQueryFilters, applyFiltersToQuery, extractPaginationParams, type ParsedFilter, type FirestoreWhereFilterOp, type PaginationParams, } from './utils/queryFilters.js';
 export { getMemoryManager, resetMemoryManager, } from './deepagent/memory.js';
@@ -31,5 +31,6 @@ export { createServerSkillAgent, getMemoryManager as getAgentMemoryManager, getS
 export { multiUserMiddleware, verifyFirebaseAuth, } from './middleware/multi-user.js';
 export { setupStateSyncWebSocket } from './websocket/state-sync.js';
 export { ServiceDiscovery, InMemoryServiceRegistry, type ServiceRegistration, type ServiceRegistryOptions, type IServiceRegistry, } from './lib/serviceDiscovery.js';
+export type { DataServiceActions, DataServiceContract, EventBusActions, EventBusServiceContract, ServiceDiscoveryActions, ServiceDiscoveryContract, ServerServiceContracts, } from './contracts.js';
 export { default as observabilityRouter } from './routes/observability.js';
 //# sourceMappingURL=index.d.ts.map

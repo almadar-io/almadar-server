@@ -34,10 +34,8 @@ export declare class EventBus {
     getListenerCounts(): Record<string, number>;
     clear(): void;
 }
-/**
- * Singleton EventBus instance for server-side event communication.
- */
-export declare const serverEventBus: EventBus;
+export declare function getServerEventBus(): EventBus;
+export declare function resetServerEventBus(): void;
 /**
  * Type-safe event emission helper
  */

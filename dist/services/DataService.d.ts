@@ -6,6 +6,7 @@
  *
  * @packageDocumentation
  */
+import type { StoreContract, StoreFilter } from '@almadar/core';
 import { type FieldSchema } from './MockDataService.js';
 import { type ParsedFilter } from '../utils/queryFilters.js';
 interface BaseEntity {
@@ -49,12 +50,12 @@ export interface DataService {
     create<T extends BaseEntity>(collection: string, data: Partial<T>): Promise<T>;
     update<T extends BaseEntity>(collection: string, id: string, data: Partial<T>): Promise<T | null>;
     delete(collection: string, id: string): Promise<boolean>;
+    query<T>(collection: string, filters: StoreFilter<T>[]): Promise<T[]>;
+    /** Get a typed StoreContract<T> bound to a specific collection. */
+    getStore<T extends BaseEntity>(collection: string): StoreContract<T>;
 }
-/**
- * Singleton data service instance.
- * Use this in handlers for all data operations.
- */
-export declare const dataService: DataService;
+export declare function getDataService(): DataService;
+export declare function resetDataService(): void;
 export interface EntitySeedConfig {
     name: string;
     fields: FieldSchema[];

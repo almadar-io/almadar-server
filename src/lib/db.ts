@@ -41,8 +41,8 @@ export function initializeFirebase(): admin.app.App {
   // Service account file
   const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
   if (serviceAccountPath) {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const serviceAccount = require(serviceAccountPath);
+    // Dynamic require for JSON service account file at runtime
+    const serviceAccount = require(serviceAccountPath) as Record<string, unknown>;
     return admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
       projectId,

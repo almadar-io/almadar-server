@@ -1,0 +1,131 @@
+{
+  "name": "Server Service",
+  "description": "Core server infrastructure — data service (CRUD over collections), event bus (pub/sub), and service discovery (registry for distributed services). Provides DataService with MockData/Firebase backends, typed EventBus, and service health monitoring.",
+  "version": "2.0.0",
+  "orbitals": [
+    {
+      "name": "DataService",
+      "entity": {
+        "name": "DataServiceState",
+        "persistence": "singleton",
+        "fields": [
+          { "name": "id", "type": "string", "required": true, "primaryKey": true },
+          { "name": "backend", "type": "string", "default": "mock" },
+          { "name": "collectionsActive", "type": "number", "default": 0 },
+          { "name": "totalOperations", "type": "number", "default": 0 },
+          { "name": "status", "type": "string", "default": "starting" }
+        ]
+      },
+      "traits": [
+        {
+          "name": "DataServiceLifecycle",
+          "category": "interaction",
+          "linkedEntity": "DataServiceState",
+          "emits": [
+            {
+              "event": "SERVICE_REGISTERED",
+              "scope": "external",
+              "payload": [
+                { "name": "name", "type": "string" },
+                { "name": "instanceId", "type": "string" },
+                { "name": "host", "type": "string" },
+                { "name": "port", "type": "number" }
+              ]
+            },
+            {
+              "event": "SERVICE_DEREGISTERED",
+              "scope": "external",
+              "payload": [
+                { "name": "name", "type": "string" },
+                { "name": "instanceId", "type": "string" },
+                { "name": "reason", "type": "string" }
+              ]
+            },
+            {
+              "event": "SERVICE_HEALTH_FAILED",
+              "scope": "external",
+              "payload": [
+                { "name": "name", "type": "string" },
+                { "name": "instanceId", "type": "string" },
+                { "name": "error", "type": "string" }
+              ]
+            },
+            {
+              "event": "TRANSPORT_CONNECTED",
+              "scope": "external",
+              "payload": [
+                { "name": "instanceId", "type": "string" },
+                { "name": "transport", "type": "string" }
+              ]
+            },
+            {
+              "event": "TRANSPORT_DISCONNECTED",
+              "scope": "external",
+              "payload": [
+                { "name": "instanceId", "type": "string" },
+                { "name": "reason", "type": "string" }
+              ]
+            }
+          ],
+          "stateMachine": {
+            "states": [
+              { "name": "Starting", "isInitial": true },
+              { "name": "Ready" },
+              { "name": "Stopped" }
+            ],
+            "events": [
+              { "key": "INIT", "name": "Initialize" },
+              { "key": "SHUTDOWN", "name": "Shutdown" },
+              { "key": "RESTART", "name": "Restart" }
+            ],
+            "transitions": [
+              {
+                "from": "Starting",
+                "to": "Ready",
+                "event": "INIT",
+                "effects": [
+                  ["set", "@entity.status", "ready"],
+                  ["emit", "TRANSPORT_CONNECTED", {
+                    "instanceId": "@entity.id",
+                    "transport": "@entity.backend"
+                  }],
+                  ["render-ui", "main", {
+                    "type": "page-header",
+                    "title": "Server Dashboard"
+                  }]
+                ]
+              },
+              {
+                "from": "Ready",
+                "to": "Stopped",
+                "event": "SHUTDOWN",
+                "effects": [
+                  ["set", "@entity.status", "stopped"],
+                  ["emit", "TRANSPORT_DISCONNECTED", {
+                    "instanceId": "@entity.id",
+                    "reason": "shutdown"
+                  }]
+                ]
+              },
+              {
+                "from": "Stopped",
+                "to": "Starting",
+                "event": "RESTART",
+                "effects": [
+                  ["set", "@entity.status", "starting"]
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "pages": [
+        {
+          "name": "ServerDashboard",
+          "path": "/admin/server",
+          "traits": [{ "ref": "DataServiceLifecycle" }]
+        }
+      ]
+    }
+  ]
+}
