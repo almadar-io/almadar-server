@@ -74,6 +74,34 @@ export {
   type PaginatedResult,
 } from './services/DataService.js';
 
+// Compat re-exports — generated project code imports these constant names.
+// They are now lazy getters; usage like `dataService.getById(...)` works
+// because the function IS the getter (called at import time in a Proxy).
+import { getMockDataService } from './services/MockDataService.js';
+import { getDataService } from './services/DataService.js';
+import { getServerEventBus } from './lib/eventBus.js';
+
+/** @deprecated Use getDataService() instead */
+export const dataService = new Proxy({} as ReturnType<typeof getDataService>, {
+  get(_target, prop, receiver) {
+    return Reflect.get(getDataService(), prop, receiver);
+  },
+});
+
+/** @deprecated Use getMockDataService() instead */
+export const mockDataService = new Proxy({} as ReturnType<typeof getMockDataService>, {
+  get(_target, prop, receiver) {
+    return Reflect.get(getMockDataService(), prop, receiver);
+  },
+});
+
+/** @deprecated Use getServerEventBus() instead */
+export const serverEventBus = new Proxy({} as ReturnType<typeof getServerEventBus>, {
+  get(_target, prop, receiver) {
+    return Reflect.get(getServerEventBus(), prop, receiver);
+  },
+});
+
 // Stores exports
 export {
   toFirestoreFormat,

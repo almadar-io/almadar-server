@@ -23,6 +23,12 @@ export { validateBody, validateQuery, validateParams } from './middleware/valida
 export { authenticateFirebase } from './middleware/authenticateFirebase.js';
 export { MockDataService, getMockDataService, resetMockDataService, type FieldSchema, type EntitySchema, } from './services/MockDataService.js';
 export { getDataService, resetDataService, seedMockData, type DataService, type EntitySeedConfig, type PaginationOptions, type PaginatedResult, } from './services/DataService.js';
+/** @deprecated Use getDataService() instead */
+export declare const dataService: import("./index.js").DataService;
+/** @deprecated Use getMockDataService() instead */
+export declare const mockDataService: import("./index.js").MockDataService;
+/** @deprecated Use getServerEventBus() instead */
+export declare const serverEventBus: import("./index.js").EventBus;
 export { toFirestoreFormat, fromFirestoreFormat, SchemaStore, SnapshotStore, ChangeSetStore, ValidationStore, SchemaProtectionService, } from './stores/index.js';
 export { parseQueryFilters, applyFiltersToQuery, extractPaginationParams, type ParsedFilter, type FirestoreWhereFilterOp, type PaginationParams, } from './utils/queryFilters.js';
 export { getMemoryManager, resetMemoryManager, } from './deepagent/memory.js';

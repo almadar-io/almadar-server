@@ -2371,6 +2371,23 @@ router.get("/active-sessions", async (req, res) => {
 });
 var observability_default = router;
 
-export { AppError, ChangeSetStore, ConflictError, DistributedEventBus, EventBus, EventPersistence, ForbiddenError, InMemoryEventStore, InMemoryServiceRegistry, InMemoryTransport, MockDataService, NotFoundError, RedisTransport, SchemaProtectionService, SchemaStore, ServiceDiscovery, SnapshotStore, UnauthorizedError, ValidationError, ValidationStore, applyFiltersToQuery, asyncHandler, authenticateFirebase, closeWebSocketServer, createServerSkillAgent, db, debugEventsRouter, emitEntityEvent, env, errorHandler, extractPaginationParams, fromFirestoreFormat, getMemoryManager as getAgentMemoryManager, getSessionManager as getAgentSessionManager, getAuth, getConnectedClientCount, getDataService, getFirestore, getMemoryManager, getMockDataService, getServerEventBus, getSessionManager, getWebSocketServer, initializeFirebase, logger, multiUserMiddleware, notFoundHandler, observability_default as observabilityRouter, parseQueryFilters, resetDataService, resetMemoryManager, resetMockDataService, resetServerEventBus, resetSessionManager, seedMockData, setupEventBroadcast, setupStateSyncWebSocket, toFirestoreFormat, validateBody, validateParams, validateQuery, verifyFirebaseAuth };
+// src/index.ts
+var dataService = new Proxy({}, {
+  get(_target, prop, receiver) {
+    return Reflect.get(getDataService(), prop, receiver);
+  }
+});
+var mockDataService = new Proxy({}, {
+  get(_target, prop, receiver) {
+    return Reflect.get(getMockDataService(), prop, receiver);
+  }
+});
+var serverEventBus = new Proxy({}, {
+  get(_target, prop, receiver) {
+    return Reflect.get(getServerEventBus(), prop, receiver);
+  }
+});
+
+export { AppError, ChangeSetStore, ConflictError, DistributedEventBus, EventBus, EventPersistence, ForbiddenError, InMemoryEventStore, InMemoryServiceRegistry, InMemoryTransport, MockDataService, NotFoundError, RedisTransport, SchemaProtectionService, SchemaStore, ServiceDiscovery, SnapshotStore, UnauthorizedError, ValidationError, ValidationStore, applyFiltersToQuery, asyncHandler, authenticateFirebase, closeWebSocketServer, createServerSkillAgent, dataService, db, debugEventsRouter, emitEntityEvent, env, errorHandler, extractPaginationParams, fromFirestoreFormat, getMemoryManager as getAgentMemoryManager, getSessionManager as getAgentSessionManager, getAuth, getConnectedClientCount, getDataService, getFirestore, getMemoryManager, getMockDataService, getServerEventBus, getSessionManager, getWebSocketServer, initializeFirebase, logger, mockDataService, multiUserMiddleware, notFoundHandler, observability_default as observabilityRouter, parseQueryFilters, resetDataService, resetMemoryManager, resetMockDataService, resetServerEventBus, resetSessionManager, seedMockData, serverEventBus, setupEventBroadcast, setupStateSyncWebSocket, toFirestoreFormat, validateBody, validateParams, validateQuery, verifyFirebaseAuth };
 //# sourceMappingURL=index.js.map
 //# sourceMappingURL=index.js.map
