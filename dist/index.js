@@ -3,8 +3,8 @@ import dotenv from 'dotenv';
 import { Router } from 'express';
 import admin from 'firebase-admin';
 export { default as admin } from 'firebase-admin';
-import { WebSocketServer, WebSocket } from 'ws';
 import { faker } from '@faker-js/faker';
+import { WebSocketServer, WebSocket } from 'ws';
 import { diffSchemas, categorizeRemovals, detectPageContentReduction, isDestructiveChange, hasSignificantPageReduction, requiresConfirmation } from '@almadar/core';
 import { getObservabilityCollector, MemoryManager, SessionManager, getMultiUserManager, createWorkflowToolWrapper, createSkillAgent, createUserContext, getStateSyncManager } from '@almadar/agent';
 
@@ -452,27 +452,6 @@ var EventPersistence = class {
     return this.store;
   }
 };
-function debugEventsRouter() {
-  const router2 = Router();
-  if (process.env.NODE_ENV !== "development") {
-    return router2;
-  }
-  router2.get("/event-log", (_req, res) => {
-    const limit = parseInt(String(_req.query.limit) || "50", 10);
-    const events = getServerEventBus().getRecentEvents(limit);
-    res.json({ count: events.length, events });
-  });
-  router2.delete("/event-log", (_req, res) => {
-    getServerEventBus().clearEventLog();
-    res.json({ cleared: true });
-  });
-  router2.get("/listeners", (_req, res) => {
-    const counts = getServerEventBus().getListenerCounts();
-    const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
-    res.json({ total, events: counts });
-  });
-  return router2;
-}
 function initializeFirebase() {
   if (admin.apps.length > 0) {
     return admin.app();
@@ -537,269 +516,6 @@ var db = new Proxy({}, {
     return typeof value === "function" ? value.bind(firestore) : value;
   }
 });
-var wss = null;
-function setupEventBroadcast(server, path = "/ws/events") {
-  if (wss) {
-    logger.warn("[WebSocket] Server already initialized");
-    return wss;
-  }
-  wss = new WebSocketServer({ server, path });
-  logger.info(`[WebSocket] Server listening at ${path}`);
-  wss.on("connection", (ws, req) => {
-    const clientId = req.headers["sec-websocket-key"] || "unknown";
-    logger.debug(`[WebSocket] Client connected: ${clientId}`);
-    ws.send(
-      JSON.stringify({
-        type: "CONNECTED",
-        timestamp: Date.now(),
-        message: "Connected to event stream"
-      })
-    );
-    ws.on("message", (data) => {
-      try {
-        const message = JSON.parse(data.toString());
-        logger.debug(`[WebSocket] Received from ${clientId}:`, message);
-        if (message.type && message.payload) {
-          getServerEventBus().emit(message.type, message.payload, {
-            orbital: "client",
-            entity: clientId
-          });
-        }
-      } catch (error) {
-        logger.error(`[WebSocket] Failed to parse message:`, error);
-      }
-    });
-    ws.on("close", () => {
-      logger.debug(`[WebSocket] Client disconnected: ${clientId}`);
-    });
-    ws.on("error", (error) => {
-      logger.error(`[WebSocket] Client error:`, error);
-    });
-  });
-  getServerEventBus().on("*", (event) => {
-    if (!wss) return;
-    const typedEvent = event;
-    const message = JSON.stringify({
-      type: typedEvent.type,
-      payload: typedEvent.payload,
-      timestamp: typedEvent.timestamp,
-      source: typedEvent.source
-    });
-    let broadcastCount = 0;
-    wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(message);
-        broadcastCount++;
-      }
-    });
-    if (broadcastCount > 0) {
-      logger.debug(`[WebSocket] Broadcast ${typedEvent.type} to ${broadcastCount} client(s)`);
-    }
-  });
-  return wss;
-}
-function getWebSocketServer() {
-  return wss;
-}
-function closeWebSocketServer() {
-  return new Promise((resolve, reject) => {
-    if (!wss) {
-      resolve();
-      return;
-    }
-    wss.close((err) => {
-      if (err) {
-        reject(err);
-      } else {
-        wss = null;
-        resolve();
-      }
-    });
-  });
-}
-function getConnectedClientCount() {
-  if (!wss) return 0;
-  return wss.clients.size;
-}
-var AppError = class extends Error {
-  constructor(statusCode, message, code) {
-    super(message);
-    this.statusCode = statusCode;
-    this.message = message;
-    this.code = code;
-    this.name = "AppError";
-  }
-};
-var NotFoundError = class extends AppError {
-  constructor(message = "Resource not found") {
-    super(404, message, "NOT_FOUND");
-  }
-};
-var ValidationError = class extends AppError {
-  constructor(message = "Validation failed") {
-    super(400, message, "VALIDATION_ERROR");
-  }
-};
-var UnauthorizedError = class extends AppError {
-  constructor(message = "Unauthorized") {
-    super(401, message, "UNAUTHORIZED");
-  }
-};
-var ForbiddenError = class extends AppError {
-  constructor(message = "Forbidden") {
-    super(403, message, "FORBIDDEN");
-  }
-};
-var ConflictError = class extends AppError {
-  constructor(message = "Resource conflict") {
-    super(409, message, "CONFLICT");
-  }
-};
-var errorHandler = (err, _req, res, _next) => {
-  logger.error("Error:", { name: err.name, message: err.message, stack: err.stack });
-  if (err instanceof ZodError) {
-    res.status(400).json({
-      success: false,
-      error: "Validation failed",
-      code: "VALIDATION_ERROR",
-      details: err.errors.map((e) => ({
-        path: e.path.join("."),
-        message: e.message
-      }))
-    });
-    return;
-  }
-  if (err instanceof AppError) {
-    res.status(err.statusCode).json({
-      success: false,
-      error: err.message,
-      code: err.code
-    });
-    return;
-  }
-  if (err.name === "FirebaseError" || err.name === "FirestoreError") {
-    res.status(500).json({
-      success: false,
-      error: "Database error",
-      code: "DATABASE_ERROR"
-    });
-    return;
-  }
-  res.status(500).json({
-    success: false,
-    error: "Internal server error",
-    code: "INTERNAL_ERROR"
-  });
-};
-var asyncHandler = (fn) => (req, res, next) => {
-  Promise.resolve(fn(req, res, next)).catch(next);
-};
-var notFoundHandler = (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: `Route ${req.method} ${req.path} not found`,
-    code: "ROUTE_NOT_FOUND"
-  });
-};
-var validateBody = (schema) => async (req, res, next) => {
-  try {
-    req.body = await schema.parseAsync(req.body);
-    next();
-  } catch (error) {
-    if (error instanceof ZodError) {
-      res.status(400).json({
-        success: false,
-        error: "Validation failed",
-        code: "VALIDATION_ERROR",
-        details: error.errors.map((e) => ({
-          path: e.path.join("."),
-          message: e.message
-        }))
-      });
-      return;
-    }
-    next(error);
-  }
-};
-var validateQuery = (schema) => async (req, res, next) => {
-  try {
-    req.query = await schema.parseAsync(req.query);
-    next();
-  } catch (error) {
-    if (error instanceof ZodError) {
-      res.status(400).json({
-        success: false,
-        error: "Invalid query parameters",
-        code: "VALIDATION_ERROR",
-        details: error.errors.map((e) => ({
-          path: e.path.join("."),
-          message: e.message
-        }))
-      });
-      return;
-    }
-    next(error);
-  }
-};
-var validateParams = (schema) => async (req, res, next) => {
-  try {
-    req.params = await schema.parseAsync(req.params);
-    next();
-  } catch (error) {
-    if (error instanceof ZodError) {
-      res.status(400).json({
-        success: false,
-        error: "Invalid path parameters",
-        code: "VALIDATION_ERROR",
-        details: error.errors.map((e) => ({
-          path: e.path.join("."),
-          message: e.message
-        }))
-      });
-      return;
-    }
-    next(error);
-  }
-};
-
-// src/middleware/authenticateFirebase.ts
-var BEARER_PREFIX = "Bearer ";
-var DEV_USER = {
-  uid: "dev-user-001",
-  email: "dev@localhost",
-  email_verified: true,
-  aud: "dev-project",
-  auth_time: Math.floor(Date.now() / 1e3),
-  exp: Math.floor(Date.now() / 1e3) + 3600,
-  iat: Math.floor(Date.now() / 1e3),
-  iss: "https://securetoken.google.com/dev-project",
-  sub: "dev-user-001",
-  firebase: {
-    identities: {},
-    sign_in_provider: "custom"
-  }
-};
-async function authenticateFirebase(req, res, next) {
-  const authorization = req.headers.authorization;
-  if (env.NODE_ENV === "development" && (!authorization || !authorization.startsWith(BEARER_PREFIX))) {
-    req.firebaseUser = DEV_USER;
-    res.locals.firebaseUser = DEV_USER;
-    return next();
-  }
-  try {
-    if (!authorization || !authorization.startsWith(BEARER_PREFIX)) {
-      return res.status(401).json({ error: "Authorization header missing or malformed" });
-    }
-    const token = authorization.slice(BEARER_PREFIX.length);
-    const decodedToken = await getAuth().verifyIdToken(token);
-    req.firebaseUser = decodedToken;
-    res.locals.firebaseUser = decodedToken;
-    return next();
-  } catch (error) {
-    console.error("Firebase authentication failed:", error);
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-}
 var MockDataService = class {
   stores = /* @__PURE__ */ new Map();
   schemas = /* @__PURE__ */ new Map();
@@ -1471,6 +1187,307 @@ function seedMockData(entities) {
     getMockDataService().seed(entity.name, entity.fields, entity.seedCount);
   }
   logger.info("[DataService] Mock data seeding complete");
+}
+
+// src/lib/debugRouter.ts
+function debugEventsRouter() {
+  const router2 = Router();
+  if (process.env.NODE_ENV !== "development") {
+    return router2;
+  }
+  router2.get("/event-log", (_req, res) => {
+    const limit = parseInt(String(_req.query.limit) || "50", 10);
+    const events = getServerEventBus().getRecentEvents(limit);
+    res.json({ count: events.length, events });
+  });
+  router2.delete("/event-log", (_req, res) => {
+    getServerEventBus().clearEventLog();
+    res.json({ cleared: true });
+  });
+  router2.get("/listeners", (_req, res) => {
+    const counts = getServerEventBus().getListenerCounts();
+    const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
+    res.json({ total, events: counts });
+  });
+  router2.post("/seed", (req, res) => {
+    const { entities } = req.body;
+    if (!entities || !Array.isArray(entities)) {
+      res.status(400).json({ error: 'Body must have "entities" array' });
+      return;
+    }
+    const configs = entities.map((e) => ({
+      name: e.name,
+      fields: e.fields,
+      seedCount: e.seedCount ?? 5
+    }));
+    seedMockData(configs);
+    const summary = configs.map((c) => `${c.name}(${c.seedCount})`).join(", ");
+    res.json({ seeded: true, summary });
+  });
+  return router2;
+}
+var wss = null;
+function setupEventBroadcast(server, path = "/ws/events") {
+  if (wss) {
+    logger.warn("[WebSocket] Server already initialized");
+    return wss;
+  }
+  wss = new WebSocketServer({ server, path });
+  logger.info(`[WebSocket] Server listening at ${path}`);
+  wss.on("connection", (ws, req) => {
+    const clientId = req.headers["sec-websocket-key"] || "unknown";
+    logger.debug(`[WebSocket] Client connected: ${clientId}`);
+    ws.send(
+      JSON.stringify({
+        type: "CONNECTED",
+        timestamp: Date.now(),
+        message: "Connected to event stream"
+      })
+    );
+    ws.on("message", (data) => {
+      try {
+        const message = JSON.parse(data.toString());
+        logger.debug(`[WebSocket] Received from ${clientId}:`, message);
+        if (message.type && message.payload) {
+          getServerEventBus().emit(message.type, message.payload, {
+            orbital: "client",
+            entity: clientId
+          });
+        }
+      } catch (error) {
+        logger.error(`[WebSocket] Failed to parse message:`, error);
+      }
+    });
+    ws.on("close", () => {
+      logger.debug(`[WebSocket] Client disconnected: ${clientId}`);
+    });
+    ws.on("error", (error) => {
+      logger.error(`[WebSocket] Client error:`, error);
+    });
+  });
+  getServerEventBus().on("*", (event) => {
+    if (!wss) return;
+    const typedEvent = event;
+    const message = JSON.stringify({
+      type: typedEvent.type,
+      payload: typedEvent.payload,
+      timestamp: typedEvent.timestamp,
+      source: typedEvent.source
+    });
+    let broadcastCount = 0;
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(message);
+        broadcastCount++;
+      }
+    });
+    if (broadcastCount > 0) {
+      logger.debug(`[WebSocket] Broadcast ${typedEvent.type} to ${broadcastCount} client(s)`);
+    }
+  });
+  return wss;
+}
+function getWebSocketServer() {
+  return wss;
+}
+function closeWebSocketServer() {
+  return new Promise((resolve, reject) => {
+    if (!wss) {
+      resolve();
+      return;
+    }
+    wss.close((err) => {
+      if (err) {
+        reject(err);
+      } else {
+        wss = null;
+        resolve();
+      }
+    });
+  });
+}
+function getConnectedClientCount() {
+  if (!wss) return 0;
+  return wss.clients.size;
+}
+var AppError = class extends Error {
+  constructor(statusCode, message, code) {
+    super(message);
+    this.statusCode = statusCode;
+    this.message = message;
+    this.code = code;
+    this.name = "AppError";
+  }
+};
+var NotFoundError = class extends AppError {
+  constructor(message = "Resource not found") {
+    super(404, message, "NOT_FOUND");
+  }
+};
+var ValidationError = class extends AppError {
+  constructor(message = "Validation failed") {
+    super(400, message, "VALIDATION_ERROR");
+  }
+};
+var UnauthorizedError = class extends AppError {
+  constructor(message = "Unauthorized") {
+    super(401, message, "UNAUTHORIZED");
+  }
+};
+var ForbiddenError = class extends AppError {
+  constructor(message = "Forbidden") {
+    super(403, message, "FORBIDDEN");
+  }
+};
+var ConflictError = class extends AppError {
+  constructor(message = "Resource conflict") {
+    super(409, message, "CONFLICT");
+  }
+};
+var errorHandler = (err, _req, res, _next) => {
+  logger.error("Error:", { name: err.name, message: err.message, stack: err.stack });
+  if (err instanceof ZodError) {
+    res.status(400).json({
+      success: false,
+      error: "Validation failed",
+      code: "VALIDATION_ERROR",
+      details: err.errors.map((e) => ({
+        path: e.path.join("."),
+        message: e.message
+      }))
+    });
+    return;
+  }
+  if (err instanceof AppError) {
+    res.status(err.statusCode).json({
+      success: false,
+      error: err.message,
+      code: err.code
+    });
+    return;
+  }
+  if (err.name === "FirebaseError" || err.name === "FirestoreError") {
+    res.status(500).json({
+      success: false,
+      error: "Database error",
+      code: "DATABASE_ERROR"
+    });
+    return;
+  }
+  res.status(500).json({
+    success: false,
+    error: "Internal server error",
+    code: "INTERNAL_ERROR"
+  });
+};
+var asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
+var notFoundHandler = (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: `Route ${req.method} ${req.path} not found`,
+    code: "ROUTE_NOT_FOUND"
+  });
+};
+var validateBody = (schema) => async (req, res, next) => {
+  try {
+    req.body = await schema.parseAsync(req.body);
+    next();
+  } catch (error) {
+    if (error instanceof ZodError) {
+      res.status(400).json({
+        success: false,
+        error: "Validation failed",
+        code: "VALIDATION_ERROR",
+        details: error.errors.map((e) => ({
+          path: e.path.join("."),
+          message: e.message
+        }))
+      });
+      return;
+    }
+    next(error);
+  }
+};
+var validateQuery = (schema) => async (req, res, next) => {
+  try {
+    req.query = await schema.parseAsync(req.query);
+    next();
+  } catch (error) {
+    if (error instanceof ZodError) {
+      res.status(400).json({
+        success: false,
+        error: "Invalid query parameters",
+        code: "VALIDATION_ERROR",
+        details: error.errors.map((e) => ({
+          path: e.path.join("."),
+          message: e.message
+        }))
+      });
+      return;
+    }
+    next(error);
+  }
+};
+var validateParams = (schema) => async (req, res, next) => {
+  try {
+    req.params = await schema.parseAsync(req.params);
+    next();
+  } catch (error) {
+    if (error instanceof ZodError) {
+      res.status(400).json({
+        success: false,
+        error: "Invalid path parameters",
+        code: "VALIDATION_ERROR",
+        details: error.errors.map((e) => ({
+          path: e.path.join("."),
+          message: e.message
+        }))
+      });
+      return;
+    }
+    next(error);
+  }
+};
+
+// src/middleware/authenticateFirebase.ts
+var BEARER_PREFIX = "Bearer ";
+var DEV_USER = {
+  uid: "dev-user-001",
+  email: "dev@localhost",
+  email_verified: true,
+  aud: "dev-project",
+  auth_time: Math.floor(Date.now() / 1e3),
+  exp: Math.floor(Date.now() / 1e3) + 3600,
+  iat: Math.floor(Date.now() / 1e3),
+  iss: "https://securetoken.google.com/dev-project",
+  sub: "dev-user-001",
+  firebase: {
+    identities: {},
+    sign_in_provider: "custom"
+  }
+};
+async function authenticateFirebase(req, res, next) {
+  const authorization = req.headers.authorization;
+  if (env.NODE_ENV === "development" && (!authorization || !authorization.startsWith(BEARER_PREFIX))) {
+    req.firebaseUser = DEV_USER;
+    res.locals.firebaseUser = DEV_USER;
+    return next();
+  }
+  try {
+    if (!authorization || !authorization.startsWith(BEARER_PREFIX)) {
+      return res.status(401).json({ error: "Authorization header missing or malformed" });
+    }
+    const token = authorization.slice(BEARER_PREFIX.length);
+    const decodedToken = await getAuth().verifyIdToken(token);
+    req.firebaseUser = decodedToken;
+    res.locals.firebaseUser = decodedToken;
+    return next();
+  } catch (error) {
+    console.error("Firebase authentication failed:", error);
+    return res.status(401).json({ error: "Unauthorized" });
+  }
 }
 
 // src/stores/firestoreFormat.ts
