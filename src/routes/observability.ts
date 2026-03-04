@@ -9,7 +9,7 @@
 import { Router } from 'express';
 import { getObservabilityCollector } from '@almadar/agent';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 /**
  * GET /metrics - Get performance snapshot
