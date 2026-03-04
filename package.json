@@ -43,7 +43,8 @@
     "build:watch": "tsup --watch",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
-    "test": "vitest --run --passWithNoTests"
+    "test": "vitest --run --passWithNoTests",
+    "prepare": "git config core.hooksPath .githooks"
   },
   "dependencies": {
     "@almadar/agent": ">=2.0.1",
