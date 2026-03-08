@@ -184,10 +184,10 @@ export class MockDataService {
 
   /**
    * Generate a string value based on field name heuristics.
-   * Generic name/title fields use entity-aware format (e.g., "Project Name 1").
+   * Generic name/title fields use a clean readable format (e.g., "Title 1").
    * Specific fields (email, phone, etc.) use faker.
    */
-  private generateStringValue(entityName: string, field: FieldSchema, index: number): string {
+  private generateStringValue(_entityName: string, field: FieldSchema, index: number): string {
     const name = field.name.toLowerCase();
 
     // If field has enumValues, use them (even if type is 'string')
@@ -206,11 +206,11 @@ export class MockDataService {
     if (name.includes('color')) return faker.color.human();
     if (name.includes('uuid')) return faker.string.uuid();
 
-    // Generic name/title/text fields - use entity-aware readable format
-    // Capitalize entity name and field name: "Project Name 1", "Task Title 1"
-    const entityLabel = this.capitalizeFirst(entityName);
+    // Generic name/title/text fields - use clean readable format
+    // Only use the field name (not the collection name) to avoid ugly prefixes
+    // like "Calendar_events Title 1". Instead produces "Title 1", "Column 5".
     const fieldLabel = this.capitalizeFirst(field.name);
-    return `${entityLabel} ${fieldLabel} ${index}`;
+    return `${fieldLabel} ${index}`;
   }
 
   /**
