@@ -218,6 +218,16 @@ export interface PaginationParams {
   sortOrder: 'asc' | 'desc';
 }
 
+/**
+ * Extract pagination parameters from a query object.
+ *
+ * Parses page, pageSize/limit, sortBy/orderBy, and sortOrder/orderDirection
+ * from query parameters with sensible defaults.
+ *
+ * @param {Record<string, unknown>} query - Query object containing pagination params
+ * @param {Partial<PaginationParams>} [defaults] - Default values for pagination
+ * @returns {PaginationParams} Extracted pagination parameters
+ */
 export function extractPaginationParams(
   query: Record<string, unknown>,
   defaults: Partial<PaginationParams> = {}

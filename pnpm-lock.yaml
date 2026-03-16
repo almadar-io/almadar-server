@@ -10,10 +10,10 @@ importers:
     dependencies:
       '@almadar/agent':
         specifier: '>=2.0.1'
-        version: 3.3.0(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(ws@8.19.0))(@langchain/langgraph-checkpoint@1.0.0(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(ws@8.19.0)))(@langchain/langgraph@1.2.2(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(ws@8.19.0))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(zod@3.25.76))(@opentelemetry/api@1.9.0)(deepagents@1.8.3(@opentelemetry/api@1.9.0)(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(ws@8.19.0))(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(ws@8.19.0)
+        version: 3.5.12(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(ws@8.19.0))(@langchain/langgraph-checkpoint@1.0.0(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(ws@8.19.0)))(@langchain/langgraph@1.2.2(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(ws@8.19.0))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(zod@3.25.76))(@opentelemetry/api@1.9.0)(deepagents@1.8.3(@opentelemetry/api@1.9.0)(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(ws@8.19.0))(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(ws@8.19.0)
       '@almadar/core':
         specifier: '>=2.1.0'
-        version: 2.2.1
+        version: 2.5.2
       '@faker-js/faker':
         specifier: ^9.3.0
         version: 9.9.0
@@ -38,7 +38,7 @@ importers:
     devDependencies:
       '@almadar/eslint-plugin':
         specifier: '>=2.3.0'
-        version: 2.4.3(eslint@10.0.0)
+        version: 2.4.5(eslint@10.0.0)
       '@types/cors':
         specifier: ^2.8.17
         version: 2.8.19
@@ -78,44 +78,44 @@ importers:
 
 packages:
 
-  '@almadar/agent@3.3.0':
-    resolution: {integrity: sha512-YaXHA2egx3o+vsrYk0MAg+/PmJbXQpKL3/c/sFRbeD9keq3mN8QZddXDqXt3eGmBye0uNQomjq91J47dFEUieA==}
+  '@almadar/agent@3.5.12':
+    resolution: {integrity: sha512-WZbVUJh4TfhdSzE3M2/bem+Kg8CSPaEG+CmQ7GpAX1/+RQwSgIaoeIDjj+jU7tkoQTxLEcEnbut+8HmDPINJxw==}
     peerDependencies:
       '@langchain/core': '>=1.0.0'
       '@langchain/langgraph': '>=1.0.0'
       '@langchain/langgraph-checkpoint': '>=1.0.0'
       deepagents: '>=1.3.0'
 
-  '@almadar/core@2.2.1':
-    resolution: {integrity: sha512-OrDMkqlHR+8gUfXfWKHcihhrd/JIjlpqgGtjtRSPoppM60Af6XGZspWnxgeiAWVF6TEv7WRBN8n68FOrIFkGmA==}
+  '@almadar/core@2.5.2':
+    resolution: {integrity: sha512-f8aBLARQhDn+rtr+RNTJ/k6PF0Ng7No7nc5AK253J3CT35JlyCDuQw353ZztHcn8x25aDCgMklkU6d0+LGioJA==}
 
-  '@almadar/eslint-plugin@2.4.3':
-    resolution: {integrity: sha512-K8L7LpoJRLObRy8ce5mwCvmtiyJzHfrOcolVQBrdiWPRSdibDmr/PvxeG6GsGzyoqJ3nvj0oi1hQYZKkPJO5xw==}
+  '@almadar/eslint-plugin@2.4.5':
+    resolution: {integrity: sha512-MXLZdQifHg8BLF8//S4C/Zg/pwg/2lzimGSepIheDbCaeRK7lsBk7oKk+/o5oc4c7WvIOcAbu1JjJM7FJxboAg==}
     peerDependencies:
       eslint: '>=8.0.0'
 
-  '@almadar/integrations@2.0.5':
-    resolution: {integrity: sha512-scXpmF+d8NhgeTPNmUW2uB/0fPUOLor4rWk1zw/dCN1MoR04HnAFF1qzVewI82FPgeIAlDWvUplrbCpuOuQo4g==}
+  '@almadar/integrations@2.0.6':
+    resolution: {integrity: sha512-zSW2kVMZCZ1XLHJaZfLFGRGF5MYGOZQpzgGRS1CuP4fzF5ThnT9DEtpBtpLqlDN9Epd+mCYY0famMndXRwK02Q==}
 
-  '@almadar/llm@2.3.0':
-    resolution: {integrity: sha512-6FO3e/oIN/pJrsPdIKxi5iKKx2KIx+dQq6obnK4YkASJY8Jc1IeVgjVQtnq6+KI/PqMUqPeumY14ZW3dtsmrtw==}
+  '@almadar/llm@2.3.4':
+    resolution: {integrity: sha512-jiLm6RJ61qwf2I4kRhp8VYW3B2qaF5/4a0PNN5qMf6O+D6wa4h5QBWL+YlzmrNUZawpP9JhCJZwtAz8k56Zorw==}
     peerDependencies:
       '@almadar/core': '>=2.0.0'
     peerDependenciesMeta:
       '@almadar/core':
         optional: true
 
-  '@almadar/operators@2.0.4':
-    resolution: {integrity: sha512-0OdzBS57+Zv6z/vcUQFPIgl89ZApJb1GSl3rMtLHRgk55laKa4kxDQZ7tvpL77MNZVl4GKYVbA4RANWbVK0Efw==}
+  '@almadar/operators@2.0.5':
+    resolution: {integrity: sha512-bPobR/9IuMMG+Rnc60aVYB8T5+biLNRf2cYNJhDYLMvxUY7gvs9QZlCpUKAYmAZe2n2+/2cJwaOnZ78jDGug1w==}
 
-  '@almadar/patterns@2.7.0':
-    resolution: {integrity: sha512-p9+D23enAHZssAs5w+V2UOY1MQ1r4sA2GMhgg0BhGDVyiavTYcfX06AB5rLT/Jv3lBCUFyNyt8QINFMW6XbhPg==}
+  '@almadar/patterns@2.7.2':
+    resolution: {integrity: sha512-r/hznWTfKkUjmnEC3b5j1Tn+z9ZHrAM8pgLnlSlEiHsPD1kE6klRZT4qiB8OkGKQvUawYLKnFLFgVdyYGxfNww==}
 
-  '@almadar/skills@2.3.0':
-    resolution: {integrity: sha512-OCzQBXQUoL+5mele4GxbTTpAwKf544FsfbpX0lHZVlymyqcTSbtWmNiYwOkcB59g//ymBQA/zDjHJTFtjVyCyg==}
+  '@almadar/skills@2.5.3':
+    resolution: {integrity: sha512-FLm9S4oZMK3Bzx8epGSPa97srRykXIwiLB3YOH2un4A6BkjC0thjwZ21fR/8loNDkETyua/Rr+xzeIcZ32/Xvg==}
 
-  '@almadar/std@2.7.1':
-    resolution: {integrity: sha512-B/26SRzIvqEqHaQF2qTfId/frDd6B9chiTsa6SM+EBRU7reKfNb0vXzeoczbkz7wsDotdYA3OBag7cVxttKJFw==}
+  '@almadar/std@3.1.2':
+    resolution: {integrity: sha512-GKC4ZDvNUpPSGjfU3f2jhmNaIxvRZhADeqBlN3Q1XAGDanBYTjsDuHXDqAGIDCZOjkbrvNQ8BCMMzp1l2aDd7A==}
 
   '@anthropic-ai/sdk@0.52.0':
     resolution: {integrity: sha512-d4c+fg+xy9e46c8+YnrrgIQR45CZlAi7PwdzIfDXDM6ACxEZli1/fxhURsq30ZpMZy6LvSkr41jGq5aF5TD7rQ==}
@@ -1988,8 +1988,8 @@ packages:
     resolution: {integrity: sha512-+EUsqGPLsM+j/zdChZjsnX51g4XrHFOIXwfnCVPGlQk/k5giakcKsuxCObBRu6DSm9opw/O6slWbJdghQM4bBg==}
     engines: {node: '>= 0.6'}
 
-  node-abi@3.88.0:
-    resolution: {integrity: sha512-At6b4UqIEVudaqPsXjmUO1r/N5BUr4yhDGs5PkBE8/oG5+TfLPhFechiskFsnT6Ql0VfUXbalUUCbfXxtj7K+w==}
+  node-abi@3.89.0:
+    resolution: {integrity: sha512-6u9UwL0HlAl21+agMN3YAMXcKByMqwGx+pq+P76vii5f7hTPtKDp08/H9py6DY+cfDw7kQNTGEj/rly3IgbNQA==}
     engines: {node: '>=10'}
 
   node-fetch@2.7.0:
@@ -2718,13 +2718,14 @@ packages:
 
 snapshots:
 
-  '@almadar/agent@3.3.0(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(ws@8.19.0))(@langchain/langgraph-checkpoint@1.0.0(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(ws@8.19.0)))(@langchain/langgraph@1.2.2(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(ws@8.19.0))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(zod@3.25.76))(@opentelemetry/api@1.9.0)(deepagents@1.8.3(@opentelemetry/api@1.9.0)(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(ws@8.19.0))(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(ws@8.19.0)':
+  '@almadar/agent@3.5.12(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(ws@8.19.0))(@langchain/langgraph-checkpoint@1.0.0(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(ws@8.19.0)))(@langchain/langgraph@1.2.2(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(ws@8.19.0))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(zod@3.25.76))(@opentelemetry/api@1.9.0)(deepagents@1.8.3(@opentelemetry/api@1.9.0)(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(ws@8.19.0))(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(ws@8.19.0)':
     dependencies:
-      '@almadar/core': 2.2.1
-      '@almadar/integrations': 2.0.5(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(ws@8.19.0)
-      '@almadar/llm': 2.3.0(@almadar/core@2.2.1)(@opentelemetry/api@1.9.0)(ws@8.19.0)
-      '@almadar/patterns': 2.7.0
-      '@almadar/skills': 2.3.0(@opentelemetry/api@1.9.0)(ws@8.19.0)
+      '@almadar/core': 2.5.2
+      '@almadar/integrations': 2.0.6(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(ws@8.19.0)
+      '@almadar/llm': 2.3.4(@almadar/core@2.5.2)(@opentelemetry/api@1.9.0)(ws@8.19.0)
+      '@almadar/patterns': 2.7.2
+      '@almadar/skills': 2.5.3(@opentelemetry/api@1.9.0)(ws@8.19.0)
+      '@almadar/std': 3.1.2
       '@langchain/core': 1.1.32(@opentelemetry/api@1.9.0)(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(ws@8.19.0)
       '@langchain/langgraph': 1.2.2(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(ws@8.19.0))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(zod@3.25.76)
       '@langchain/langgraph-checkpoint': 1.0.0(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(ws@8.19.0))
@@ -2746,22 +2747,22 @@ snapshots:
       - supports-color
       - ws
 
-  '@almadar/core@2.2.1':
+  '@almadar/core@2.5.2':
     dependencies:
-      '@almadar/operators': 2.0.4
-      '@almadar/patterns': 2.7.0
+      '@almadar/operators': 2.0.5
+      '@almadar/patterns': 2.7.2
       zod: 3.25.76
 
-  '@almadar/eslint-plugin@2.4.3(eslint@10.0.0)':
+  '@almadar/eslint-plugin@2.4.5(eslint@10.0.0)':
     dependencies:
       eslint: 10.0.0
       jsonc-eslint-parser: 3.1.0
 
-  '@almadar/integrations@2.0.5(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(ws@8.19.0)':
+  '@almadar/integrations@2.0.6(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(ws@8.19.0)':
     dependencies:
-      '@almadar/core': 2.2.1
-      '@almadar/llm': 2.3.0(@almadar/core@2.2.1)(@opentelemetry/api@1.9.0)(ws@8.19.0)
-      '@almadar/patterns': 2.7.0
+      '@almadar/core': 2.5.2
+      '@almadar/llm': 2.3.4(@almadar/core@2.5.2)(@opentelemetry/api@1.9.0)(ws@8.19.0)
+      '@almadar/patterns': 2.7.2
       '@sendgrid/mail': 8.1.6
       dotenv: 16.6.1
       googleapis: 144.0.0
@@ -2780,7 +2781,7 @@ snapshots:
       - supports-color
       - ws
 
-  '@almadar/llm@2.3.0(@almadar/core@2.2.1)(@opentelemetry/api@1.9.0)(ws@8.19.0)':
+  '@almadar/llm@2.3.4(@almadar/core@2.5.2)(@opentelemetry/api@1.9.0)(ws@8.19.0)':
     dependencies:
       '@anthropic-ai/sdk': 0.52.0
       '@langchain/anthropic': 1.3.23(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(openai@6.29.0(ws@8.19.0)(zod@3.25.76))(ws@8.19.0))
@@ -2789,23 +2790,23 @@ snapshots:
       openai: 6.29.0(ws@8.19.0)(zod@3.25.76)
       zod: 3.25.76
     optionalDependencies:
-      '@almadar/core': 2.2.1
+      '@almadar/core': 2.5.2
     transitivePeerDependencies:
       - '@opentelemetry/api'
       - '@opentelemetry/exporter-trace-otlp-proto'
       - '@opentelemetry/sdk-trace-base'
       - ws
 
-  '@almadar/operators@2.0.4': {}
+  '@almadar/operators@2.0.5': {}
 
-  '@almadar/patterns@2.7.0': {}
+  '@almadar/patterns@2.7.2': {}
 
-  '@almadar/skills@2.3.0(@opentelemetry/api@1.9.0)(ws@8.19.0)':
+  '@almadar/skills@2.5.3(@opentelemetry/api@1.9.0)(ws@8.19.0)':
     dependencies:
-      '@almadar/core': 2.2.1
-      '@almadar/llm': 2.3.0(@almadar/core@2.2.1)(@opentelemetry/api@1.9.0)(ws@8.19.0)
-      '@almadar/patterns': 2.7.0
-      '@almadar/std': 2.7.1
+      '@almadar/core': 2.5.2
+      '@almadar/llm': 2.3.4(@almadar/core@2.5.2)(@opentelemetry/api@1.9.0)(ws@8.19.0)
+      '@almadar/patterns': 2.7.2
+      '@almadar/std': 3.1.2
       commander: 12.1.0
       glob: 10.5.0
     transitivePeerDependencies:
@@ -2814,10 +2815,10 @@ snapshots:
       - '@opentelemetry/sdk-trace-base'
       - ws
 
-  '@almadar/std@2.7.1':
+  '@almadar/std@3.1.2':
     dependencies:
-      '@almadar/core': 2.2.1
-      '@almadar/operators': 2.0.4
+      '@almadar/core': 2.5.2
+      '@almadar/operators': 2.0.5
 
   '@anthropic-ai/sdk@0.52.0': {}
 
@@ -4761,7 +4762,7 @@ snapshots:
 
   negotiator@0.6.3: {}
 
-  node-abi@3.88.0:
+  node-abi@3.89.0:
     dependencies:
       semver: 7.7.4
     optional: true
@@ -4902,7 +4903,7 @@ snapshots:
       minimist: 1.2.8
       mkdirp-classic: 0.5.3
       napi-build-utils: 2.0.0
-      node-abi: 3.88.0
+      node-abi: 3.89.0
       pump: 3.0.4
       rc: 1.2.8
       simple-get: 4.0.1
