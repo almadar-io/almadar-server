@@ -6,7 +6,7 @@
  * @packageDocumentation
  */
 
-import { MemoryManager } from '@almadar/agent';
+import { MemoryManager } from '@almadar-io/agent';
 import { db } from '../lib/db.js';
 
 let memoryManager: MemoryManager | null = null;

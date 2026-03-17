@@ -6,10 +6,10 @@
  * @packageDocumentation
  */
 
-import { SessionManager } from '@almadar/agent';
+import { SessionManager } from '@almadar-io/agent';
 import { db } from '../lib/db.js';
 import { getMemoryManager } from './memory.js';
-import type { FirestoreDb } from '@almadar/agent';
+import type { FirestoreDb } from '@almadar-io/agent';
 
 let sessionManager: SessionManager | null = null;
 

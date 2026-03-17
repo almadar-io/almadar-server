@@ -35,7 +35,7 @@ vi.mock('../../lib/db.js', () => {
 });
 
 import { getMemoryManager, resetMemoryManager } from '../memory';
-import { MemoryManager } from '@almadar/agent';
+import { MemoryManager } from '@almadar-io/agent';
 
 describe('MemoryManager Integration', () => {
   beforeEach(() => {

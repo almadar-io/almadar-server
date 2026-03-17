@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getSessionManager, resetSessionManager } from '../session';
-import { SessionManager } from '@almadar/agent';
+import { SessionManager } from '@almadar-io/agent';
 
 // Mock Firebase Admin
 vi.mock('firebase-admin/firestore', () => ({

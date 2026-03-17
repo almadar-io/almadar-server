@@ -36,7 +36,8 @@
     "dist"
   ],
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
   },
   "scripts": {
     "build": "tsup && tsc --declaration --emitDeclarationOnly --outDir dist --rootDir src --skipLibCheck || true",
@@ -47,7 +48,6 @@
     "prepare": "git config core.hooksPath .githooks"
   },
   "dependencies": {
-    "@almadar/agent": ">=2.0.1",
     "@almadar/core": ">=2.1.0",
     "@faker-js/faker": "^9.3.0",
     "cors": "^2.8.5",
@@ -58,7 +58,13 @@
     "zod": "^3.24.0"
   },
   "peerDependencies": {
-    "express": "^4.0.0"
+    "express": "^4.0.0",
+    "@almadar-io/agent": ">=2.0.1"
+  },
+  "peerDependenciesMeta": {
+    "@almadar-io/agent": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@almadar/eslint-plugin": ">=2.3.0",

@@ -123,29 +123,44 @@ export {
   type PaginationParams,
 } from './utils/queryFilters.js';
 
-// DeepAgent exports (GAP implementations)
-export {
-  getMemoryManager,
-  resetMemoryManager,
-} from './deepagent/memory.js';
-export {
-  getSessionManager,
-  resetSessionManager,
-} from './deepagent/session.js';
-export {
-  createServerSkillAgent,
-  getMemoryManager as getAgentMemoryManager,
-  getSessionManager as getAgentSessionManager,
-} from './deepagent/skill-agent.js';
+// DeepAgent exports (require @almadar-io/agent as optional peer dependency)
+// These are re-exported lazily — they throw at call time if agent is not installed.
+export async function getMemoryManager(...args: unknown[]) {
+  const m = await import('./deepagent/memory.js');
+  return m.getMemoryManager(...args as []);
+}
+export async function resetMemoryManager() {
+  const m = await import('./deepagent/memory.js');
+  return m.resetMemoryManager();
+}
+export async function getSessionManager(...args: unknown[]) {
+  const m = await import('./deepagent/session.js');
+  return m.getSessionManager(...args as []);
+}
+export async function resetSessionManager() {
+  const m = await import('./deepagent/session.js');
+  return m.resetSessionManager();
+}
+export async function createServerSkillAgent(...args: unknown[]) {
+  const m = await import('./deepagent/skill-agent.js');
+  return m.createServerSkillAgent(...args as []);
+}
 
-// Multi-user middleware exports
-export {
-  multiUserMiddleware,
-  verifyFirebaseAuth,
-} from './middleware/multi-user.js';
+// Multi-user middleware (requires @almadar-io/agent)
+export async function multiUserMiddleware(...args: unknown[]) {
+  const m = await import('./middleware/multi-user.js');
+  return m.multiUserMiddleware(...args as []);
+}
+export async function verifyFirebaseAuth(...args: unknown[]) {
+  const m = await import('./middleware/multi-user.js');
+  return m.verifyFirebaseAuth(...args as []);
+}
 
-// WebSocket exports
-export { setupStateSyncWebSocket } from './websocket/state-sync.js';
+// WebSocket state sync (requires @almadar-io/agent)
+export async function setupStateSyncWebSocket(...args: unknown[]) {
+  const m = await import('./websocket/state-sync.js');
+  return m.setupStateSyncWebSocket(...args as []);
+}
 
 // Service Discovery exports
 export {
@@ -167,5 +182,8 @@ export type {
   ServerServiceContracts,
 } from './contracts.js';
 
-// Route exports
-export { default as observabilityRouter } from './routes/observability.js';
+// Route exports (requires @almadar-io/agent)
+export async function observabilityRouter() {
+  const m = await import('./routes/observability.js');
+  return m.default;
+}

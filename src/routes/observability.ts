@@ -7,7 +7,7 @@
  */
 
 import { Router } from 'express';
-import { getObservabilityCollector } from '@almadar/agent';
+import { getObservabilityCollector } from '@almadar-io/agent';
 
 const router: ReturnType<typeof Router> = Router();
 

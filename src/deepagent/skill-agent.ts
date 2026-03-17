@@ -13,7 +13,7 @@ import {
   createWorkflowToolWrapper,
   type SkillAgentOptions,
   type SkillAgentResult,
-} from '@almadar/agent';
+} from '@almadar-io/agent';
 import { getMemoryManager } from './memory.js';
 import { getSessionManager } from './session.js';
 

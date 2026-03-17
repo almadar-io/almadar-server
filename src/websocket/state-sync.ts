@@ -6,8 +6,8 @@
  * @packageDocumentation
  */
 
-import { getStateSyncManager } from '@almadar/agent';
-import { getMultiUserManager } from '@almadar/agent';
+import { getStateSyncManager } from '@almadar-io/agent';
+import { getMultiUserManager } from '@almadar-io/agent';
 import { getAuth } from '../lib/db.js';
 
 // Type definitions for Socket.IO (to avoid dependency)
@@ -80,7 +80,7 @@ export function setupStateSyncWebSocket(io: SocketServer): void {
       }
 
       // Process through sync manager
-      stateSync.receiveRemoteChange(event as unknown as import('@almadar/agent').StateChangeEvent);
+      stateSync.receiveRemoteChange(event as unknown as import('@almadar-io/agent').StateChangeEvent);
 
       // Broadcast to other clients of same user
       socket.to(`user:${userId}`).emit('remoteChange', event);

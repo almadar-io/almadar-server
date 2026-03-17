@@ -6,7 +6,7 @@
  * @packageDocumentation
  */
 
-import { getMultiUserManager, createUserContext } from '@almadar/agent';
+import { getMultiUserManager, createUserContext } from '@almadar-io/agent';
 import { getAuth } from '../lib/db.js';
 import type { Request, Response, NextFunction } from 'express';
 
