@@ -61,7 +61,7 @@
     "express": "^4.0.0"
   },
   "devDependencies": {
-    "@almadar/eslint-plugin": ">=2.5.0",
+    "@almadar/eslint-plugin": ">=2.3.0",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^20.0.0",
