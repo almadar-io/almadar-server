@@ -47,8 +47,8 @@
     "prepare": "git config core.hooksPath .githooks"
   },
   "dependencies": {
-    "@almadar/agent": ">=3.6.0",
-    "@almadar/core": ">=2.6.0",
+    "@almadar/agent": ">=2.0.1",
+    "@almadar/core": ">=2.1.0",
     "@faker-js/faker": "^9.3.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",
@@ -78,7 +78,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/almadar-io/almadar.git",
+    "url": "https://github.com/almadar-io/almadar-server.git",
     "directory": "docs/packages/server"
   },
   "license": "MIT",
