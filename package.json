@@ -1,6 +1,6 @@
 {
   "name": "@almadar/server",
-  "version": "2.0.9",
+  "version": "2.1.0",
   "description": "Shared server infrastructure for Almadar applications",
   "type": "module",
   "main": "./dist/index.js",
@@ -36,7 +36,7 @@
     "dist"
   ],
   "publishConfig": {
-    "access": "public"
+    "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
     "build": "tsup && tsc --declaration --emitDeclarationOnly --outDir dist --rootDir src --skipLibCheck || true",
@@ -47,8 +47,8 @@
     "prepare": "git config core.hooksPath .githooks"
   },
   "dependencies": {
-    "@almadar/agent": ">=2.0.1",
-    "@almadar/core": ">=2.1.0",
+    "@almadar/agent": ">=3.6.0",
+    "@almadar/core": ">=2.6.0",
     "@faker-js/faker": "^9.3.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",
@@ -61,7 +61,7 @@
     "express": "^4.0.0"
   },
   "devDependencies": {
-    "@almadar/eslint-plugin": ">=2.3.0",
+    "@almadar/eslint-plugin": ">=2.5.0",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^20.0.0",
