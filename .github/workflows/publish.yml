@@ -23,12 +23,9 @@ jobs:
         with:
           node-version: 22
 
-      - name: Configure GitHub Packages for @almadar-io scope
-        run: |
-          echo "@almadar-io:registry=https://npm.pkg.github.com" >> .npmrc
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
-
-      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm install --no-frozen-lockfile --no-optional
+        env:
+          npm_config_auto_install_peers: false
 
       - name: Build
         run: pnpm build
