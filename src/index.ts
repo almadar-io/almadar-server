@@ -183,7 +183,7 @@ export type {
 } from './contracts.js';
 
 // Route exports (requires @almadar-io/agent)
-export async function observabilityRouter() {
+export async function observabilityRouter(): Promise<import('express').Router> {
   const m = await import('./routes/observability.js');
   return m.default;
 }
