@@ -141,25 +141,25 @@ export async function resetSessionManager() {
   const m = await import('./deepagent/session.js');
   return m.resetSessionManager();
 }
-export async function createServerSkillAgent(...args: unknown[]) {
+export async function createServerSkillAgent(options: Record<string, unknown>) {
   const m = await import('./deepagent/skill-agent.js');
-  return m.createServerSkillAgent(...args as []);
+  return m.createServerSkillAgent(options as Parameters<typeof m.createServerSkillAgent>[0]);
 }
 
 // Multi-user middleware (requires @almadar-io/agent)
-export async function multiUserMiddleware(...args: unknown[]) {
+export async function multiUserMiddleware(req: unknown, res: unknown, next: unknown) {
   const m = await import('./middleware/multi-user.js');
-  return m.multiUserMiddleware(...args as []);
+  return m.multiUserMiddleware(req as Parameters<typeof m.multiUserMiddleware>[0], res as Parameters<typeof m.multiUserMiddleware>[1], next as Parameters<typeof m.multiUserMiddleware>[2]);
 }
-export async function verifyFirebaseAuth(...args: unknown[]) {
+export async function verifyFirebaseAuth(req: unknown, res: unknown, next: unknown) {
   const m = await import('./middleware/multi-user.js');
-  return m.verifyFirebaseAuth(...args as []);
+  return m.verifyFirebaseAuth(req as Parameters<typeof m.verifyFirebaseAuth>[0], res as Parameters<typeof m.verifyFirebaseAuth>[1], next as Parameters<typeof m.verifyFirebaseAuth>[2]);
 }
 
 // WebSocket state sync (requires @almadar-io/agent)
-export async function setupStateSyncWebSocket(...args: unknown[]) {
+export async function setupStateSyncWebSocket(io: unknown) {
   const m = await import('./websocket/state-sync.js');
-  return m.setupStateSyncWebSocket(...args as []);
+  return m.setupStateSyncWebSocket(io as Parameters<typeof m.setupStateSyncWebSocket>[0]);
 }
 
 // Service Discovery exports

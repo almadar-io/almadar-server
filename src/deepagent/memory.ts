@@ -6,16 +6,16 @@
  * @packageDocumentation
  */
 
-import { MemoryManager } from '@almadar-io/agent';
 import { db } from '../lib/db.js';
 
-let memoryManager: MemoryManager | null = null;
+let memoryManager: unknown = null;
 
 /**
  * Get or create the MemoryManager singleton
  */
-export function getMemoryManager(): MemoryManager {
+export async function getMemoryManager() {
   if (!memoryManager) {
+    const { MemoryManager } = await import('@almadar-io/agent');
     memoryManager = new MemoryManager({
       db,
       usersCollection: 'agent_memory_users',

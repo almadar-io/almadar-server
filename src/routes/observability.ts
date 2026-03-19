@@ -7,7 +7,11 @@
  */
 
 import { Router } from 'express';
-import { getObservabilityCollector } from '@almadar-io/agent';
+
+async function getObservabilityCollector() {
+  const mod = await import('@almadar-io/agent');
+  return mod.getObservabilityCollector();
+}
 
 const router: ReturnType<typeof Router> = Router();
 
@@ -16,7 +20,7 @@ const router: ReturnType<typeof Router> = Router();
  */
 router.get('/metrics', async (req, res) => {
   try {
-    const collector = getObservabilityCollector();
+    const collector = await getObservabilityCollector();
     const snapshot = collector.getPerformanceSnapshot();
     res.json(snapshot);
   } catch (error) {
@@ -30,7 +34,7 @@ router.get('/metrics', async (req, res) => {
  */
 router.get('/health', async (req, res) => {
   try {
-    const collector = getObservabilityCollector();
+    const collector = await getObservabilityCollector();
     const health = await collector.healthCheck();
     const allHealthy = health.every((h) => h.status === 'healthy');
 
@@ -53,7 +57,7 @@ router.get('/health', async (req, res) => {
  */
 router.get('/sessions/:threadId/telemetry', async (req, res) => {
   try {
-    const collector = getObservabilityCollector();
+    const collector = await getObservabilityCollector();
     const telemetry = collector.getSessionTelemetry(req.params.threadId);
 
     if (!telemetry) {
@@ -73,7 +77,7 @@ router.get('/sessions/:threadId/telemetry', async (req, res) => {
  */
 router.get('/active-sessions', async (req, res) => {
   try {
-    const collector = getObservabilityCollector();
+    const collector = await getObservabilityCollector();
     const sessions = collector.getActiveSessions();
     res.json(sessions);
   } catch (error) {

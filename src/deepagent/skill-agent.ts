@@ -6,22 +6,19 @@
  * @packageDocumentation
  */
 
-import {
-  createSkillAgent,
-  getObservabilityCollector,
-  getMultiUserManager,
-  createWorkflowToolWrapper,
-  type SkillAgentOptions,
-  type SkillAgentResult,
-} from '@almadar-io/agent';
 import { getMemoryManager } from './memory.js';
 import { getSessionManager } from './session.js';
 
-interface ServerSkillAgentOptions extends SkillAgentOptions {
-  /** User ID from Firebase Auth */
+async function loadAgent() {
+  return import('@almadar-io/agent');
+}
+
+interface ServerSkillAgentOptions {
   userId: string;
-  /** App/Project ID for context */
   appId?: string;
+  threadId?: string;
+  skill?: string;
+  [key: string]: unknown;
 }
 
 /**
@@ -29,11 +26,12 @@ interface ServerSkillAgentOptions extends SkillAgentOptions {
  */
 export async function createServerSkillAgent(
   options: ServerSkillAgentOptions,
-): Promise<SkillAgentResult> {
-  const memoryManager = getMemoryManager();
-  const sessionManager = getSessionManager();
-  const observability = getObservabilityCollector();
-  const multiUser = getMultiUserManager();
+) {
+  const agent = await loadAgent();
+  const memoryManager = await getMemoryManager();
+  const sessionManager = await getSessionManager();
+  const observability = agent.getObservabilityCollector();
+  const multiUser = agent.getMultiUserManager();
 
   // Check access if resuming existing session
   if (options.threadId) {
@@ -50,14 +48,14 @@ export async function createServerSkillAgent(
   observability.startSession(options.threadId ?? 'new', options.userId);
 
   // Create workflow tool wrapper for retry/telemetry (always enabled)
-  const workflowToolWrapper = createWorkflowToolWrapper({
+  const workflowToolWrapper = agent.createWorkflowToolWrapper({
     maxRetries: 2,
     enableTelemetry: true,
     timeoutMs: 300000, // 5 minutes
   });
 
   try {
-    const result = await createSkillAgent({
+    const result = await agent.createSkillAgent({
       ...options,
       memoryManager, // GAP-001: Enable memory
       userId: options.userId, // GAP-002D: Session → Memory sync
@@ -66,8 +64,9 @@ export async function createServerSkillAgent(
     });
 
     // Assign ownership for new sessions
-    if (result.threadId) {
-      multiUser.assignSessionOwnership(result.threadId, options.userId);
+    const threadId = result.threadId as string | undefined;
+    if (threadId) {
+      multiUser.assignSessionOwnership(threadId, options.userId);
     }
 
     // Record successful creation

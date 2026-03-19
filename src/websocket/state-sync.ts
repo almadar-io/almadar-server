@@ -6,9 +6,11 @@
  * @packageDocumentation
  */
 
-import { getStateSyncManager } from '@almadar-io/agent';
-import { getMultiUserManager } from '@almadar-io/agent';
 import { getAuth } from '../lib/db.js';
+
+async function loadAgent() {
+  return import('@almadar-io/agent');
+}
 
 // Type definitions for Socket.IO (to avoid dependency)
 interface Socket {
@@ -29,8 +31,9 @@ interface SocketServer {
 /**
  * Set up state sync WebSocket with Firebase Auth
  */
-export function setupStateSyncWebSocket(io: SocketServer): void {
-  const stateSync = getStateSyncManager();
+export async function setupStateSyncWebSocket(io: SocketServer): Promise<void> {
+  const agent = await loadAgent();
+  const stateSync = agent.getStateSyncManager();
 
   // Firebase Auth middleware for Socket.IO
   io.use(async (socket, next) => {
@@ -73,7 +76,7 @@ export function setupStateSyncWebSocket(io: SocketServer): void {
       const event = args[0] as { threadId: string };
       
       // Verify ownership
-      const multiUser = getMultiUserManager();
+      const multiUser = agent.getMultiUserManager();
       if (!multiUser.isSessionOwner(event.threadId, userId)) {
         socket.emit('error', { message: 'Not session owner' });
         return;
@@ -87,7 +90,8 @@ export function setupStateSyncWebSocket(io: SocketServer): void {
     });
 
     // Handle sync required events from agent
-    stateSync.on('syncRequired', (changes: unknown[]) => {
+    stateSync.on('syncRequired', (...args: unknown[]) => {
+      const changes = args[0] as unknown[];
       socket.emit('syncBatch', changes);
     });
 

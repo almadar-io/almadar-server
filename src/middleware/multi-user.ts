@@ -6,8 +6,11 @@
  * @packageDocumentation
  */
 
-import { getMultiUserManager, createUserContext } from '@almadar-io/agent';
 import { getAuth } from '../lib/db.js';
+
+async function loadAgent() {
+  return import('@almadar-io/agent');
+}
 import type { Request, Response, NextFunction } from 'express';
 
 // Extend Express Request to include Firebase user
@@ -45,16 +48,17 @@ export async function multiUserMiddleware(
   }
 
   // Create user context
-  req.userContext = createUserContext(userId, {
+  const agent = await loadAgent();
+  req.userContext = agent.createUserContext(userId, {
     orgId: req.user?.orgId,
     roles: req.user?.roles ?? ['user'],
-  });
+  }) as { userId: string; orgId?: string; roles?: string[] };
 
   // Assign session ownership when creating new sessions
   const originalJson = res.json.bind(res);
   res.json = (body: unknown) => {
     if (body && typeof body === 'object' && 'threadId' in body) {
-      const multiUser = getMultiUserManager();
+      const multiUser = agent.getMultiUserManager();
       multiUser.assignSessionOwnership(
         (body as { threadId: string }).threadId,
         userId,

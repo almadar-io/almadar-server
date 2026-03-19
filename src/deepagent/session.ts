@@ -6,29 +6,23 @@
  * @packageDocumentation
  */
 
-import { SessionManager } from '@almadar-io/agent';
 import { db } from '../lib/db.js';
 import { getMemoryManager } from './memory.js';
-import type { FirestoreDb } from '@almadar-io/agent';
 
-let sessionManager: SessionManager | null = null;
-
-/**
- * Adapter to make Firebase Firestore compatible with @almadar/agent FirestoreDb interface
- */
-function createFirestoreAdapter(firestore: typeof db): FirestoreDb {
-  return firestore as unknown as FirestoreDb;
-}
+let sessionManager: unknown = null;
 
 /**
  * Get or create the SessionManager singleton
  */
-export function getSessionManager(): SessionManager {
+export async function getSessionManager() {
   if (!sessionManager) {
+    const { SessionManager } = await import('@almadar-io/agent');
+    const firestoreDb = db as unknown as import('@almadar-io/agent').FirestoreDb;
+    const memoryManager = await getMemoryManager();
     sessionManager = new SessionManager({
       mode: 'firestore',
-      firestoreDb: createFirestoreAdapter(db),
-      memoryManager: getMemoryManager(), // Enable GAP-002D
+      firestoreDb,
+      memoryManager, // Enable GAP-002D
       compactionConfig: {
         maxTokens: 150000,
         keepRecentMessages: 10,
