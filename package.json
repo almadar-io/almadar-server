@@ -87,7 +87,7 @@
     "url": "https://github.com/almadar-io/almadar-server.git",
     "directory": "docs/packages/server"
   },
-  "license": "MIT",
+  "license": "BSL-1.1",
   "keywords": [
     "almadar",
     "server",
