@@ -11,7 +11,10 @@ import type { StoreContract, StoreFilter } from '@almadar/core';
 import { db } from '../lib/db.js';
 import { env } from '../lib/env.js';
 import { logger } from '../lib/logger.js';
+import { createLogger } from '../almadarLogger.js';
 import { getMockDataService, type FieldSchema } from './MockDataService.js';
+
+const dataLog = createLogger('almadar:server:data');
 import {
   parseQueryFilters,
   applyFiltersToQuery,
@@ -120,7 +123,9 @@ function applyFilterCondition(value: unknown, operator: string, filterValue: unk
  */
 class MockDataServiceAdapter implements DataService {
   async list<T>(collection: string): Promise<T[]> {
-    return getMockDataService().list<T>(collection);
+    const result = getMockDataService().list<T>(collection);
+    dataLog.debug('list', { entity: collection, count: result.length });
+    return result;
   }
 
   async listPaginated<T>(
@@ -186,11 +191,15 @@ class MockDataServiceAdapter implements DataService {
   }
 
   async getById<T>(collection: string, id: string): Promise<T | null> {
-    return getMockDataService().getById<T>(collection, id);
+    const result = getMockDataService().getById<T>(collection, id);
+    dataLog.debug('getById', { entity: collection, id, found: result !== null });
+    return result;
   }
 
   async create<T extends BaseEntity>(collection: string, data: Partial<T>): Promise<T> {
-    return getMockDataService().create<T>(collection, data);
+    const result = getMockDataService().create<T>(collection, data);
+    dataLog.info('create', { entity: collection, id: result.id });
+    return result;
   }
 
   async update<T extends BaseEntity>(
@@ -198,11 +207,15 @@ class MockDataServiceAdapter implements DataService {
     id: string,
     data: Partial<T>
   ): Promise<T | null> {
-    return getMockDataService().update<T>(collection, id, data);
+    const result = getMockDataService().update<T>(collection, id, data);
+    dataLog.info('update', { entity: collection, id, found: result !== null });
+    return result;
   }
 
   async delete(collection: string, id: string): Promise<boolean> {
-    return getMockDataService().delete(collection, id);
+    const result = getMockDataService().delete(collection, id);
+    dataLog.info('delete', { entity: collection, id, success: result });
+    return result;
   }
 
   async query<T>(collection: string, filters: StoreFilter<T>[]): Promise<T[]> {
@@ -250,10 +263,12 @@ class MockDataServiceAdapter implements DataService {
 class FirebaseDataService implements DataService {
   async list<T>(collection: string): Promise<T[]> {
     const snapshot = await db.collection(collection).get();
-    return snapshot.docs.map((doc) => ({
+    const items = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     })) as T[];
+    dataLog.debug('list', { entity: collection, count: items.length });
+    return items;
   }
 
   async listPaginated<T>(
@@ -327,6 +342,7 @@ class FirebaseDataService implements DataService {
 
   async getById<T>(collection: string, id: string): Promise<T | null> {
     const doc = await db.collection(collection).doc(id).get();
+    dataLog.debug('getById', { entity: collection, id, found: doc.exists });
     if (!doc.exists) {
       return null;
     }
@@ -341,6 +357,7 @@ class FirebaseDataService implements DataService {
       updatedAt: now,
     });
 
+    dataLog.info('create', { entity: collection, id: docRef.id });
     return {
       ...data,
       id: docRef.id,
@@ -367,6 +384,7 @@ class FirebaseDataService implements DataService {
       updatedAt: now,
     });
 
+    dataLog.info('update', { entity: collection, id });
     return {
       ...doc.data(),
       ...data,
@@ -380,10 +398,12 @@ class FirebaseDataService implements DataService {
     const doc = await docRef.get();
 
     if (!doc.exists) {
+      dataLog.debug('delete', { entity: collection, id, found: false });
       return false;
     }
 
     await docRef.delete();
+    dataLog.info('delete', { entity: collection, id, success: true });
     return true;
   }
 

@@ -2,6 +2,9 @@ import { NextFunction, Request, Response } from 'express';
 import type { DecodedIdToken } from 'firebase-admin/auth';
 import { getAuth } from '../lib/db.js';
 import { env } from '../lib/env.js';
+import { createLogger } from '../almadarLogger.js';
+
+const authLog = createLogger('almadar:server:auth');
 
 const BEARER_PREFIX = 'Bearer ';
 
@@ -27,6 +30,7 @@ export async function authenticateFirebase(req: Request, res: Response, next: Ne
 
   // Dev bypass: in development mode, skip auth if no token is provided
   if (env.NODE_ENV === 'development' && (!authorization || !authorization.startsWith(BEARER_PREFIX))) {
+    authLog.debug('auth:devBypass', { uid: DEV_USER.uid });
     req.firebaseUser = DEV_USER;
     res.locals.firebaseUser = DEV_USER;
     return next();
@@ -40,11 +44,13 @@ export async function authenticateFirebase(req: Request, res: Response, next: Ne
     const token = authorization.slice(BEARER_PREFIX.length);
     const decodedToken = await getAuth().verifyIdToken(token);
 
+    authLog.info('auth:verified', { uid: decodedToken.uid, email: decodedToken.email });
     req.firebaseUser = decodedToken;
     res.locals.firebaseUser = decodedToken;
 
     return next();
   } catch (error) {
+    authLog.warn('auth:failed', { error: error instanceof Error ? error.message : String(error) });
     console.error('Firebase authentication failed:', error);
     return res.status(401).json({ error: 'Unauthorized' });
   }
