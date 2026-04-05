@@ -2,16 +2,17 @@
  * Almadar Structured Logger (Server copy)
  *
  * Namespace-based logging with level gating.
- * Duplicated from @almadar/ui/lib/logger because @almadar/server
- * does not depend on @almadar/ui.
+ * Uses LogMeta from @almadar/core for structured log data.
  *
  * @packageDocumentation
  */
 
+import type { LogMeta } from '@almadar/core';
+
 type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
 
-/** Structured log data attached to log entries. */
-export interface LogData { [key: string]: string | number | boolean | null | undefined }
+/** Structured log data attached to log entries (delegates to @almadar/core LogMeta). */
+export type LogData = LogMeta;
 
 const LEVEL_PRIORITY: Record<LogLevel, number> = { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3 };
 

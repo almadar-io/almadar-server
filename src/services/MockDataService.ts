@@ -7,6 +7,7 @@
  * @packageDocumentation
  */
 
+import type { EntityRow, FieldValue } from '@almadar/core';
 import { faker } from '@faker-js/faker';
 import { env } from '../lib/env.js';
 import { logger } from '../lib/logger.js';
@@ -112,10 +113,10 @@ export class MockDataService {
   /**
    * Generate a single mock item based on field schemas.
    */
-  private generateMockItem(entityName: string, fields: FieldSchema[], index: number): BaseEntity & { [field: string]: unknown } {
+  private generateMockItem(entityName: string, fields: FieldSchema[], index: number): BaseEntity & EntityRow {
     const id = this.nextId(entityName);
     const now = new Date();
-    const item: { [field: string]: unknown } = {
+    const item: EntityRow = {
       id,
       createdAt: faker.date.past({ years: 1 }),
       updatedAt: now,
@@ -125,10 +126,13 @@ export class MockDataService {
       if (field.name === 'id' || field.name === 'createdAt' || field.name === 'updatedAt') {
         continue;
       }
-      item[field.name] = this.generateFieldValue(entityName, field, index);
+      const value = this.generateFieldValue(entityName, field, index);
+      if (value !== undefined) {
+        item[field.name] = value as FieldValue;
+      }
     }
 
-    return item as BaseEntity & { [field: string]: unknown };
+    return item as BaseEntity & EntityRow;
   }
 
   /**
