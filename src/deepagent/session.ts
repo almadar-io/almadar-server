@@ -17,7 +17,7 @@ let sessionManager: unknown = null;
 export async function getSessionManager() {
   if (!sessionManager) {
     const { SessionManager } = await import('@almadar-io/agent');
-    const firestoreDb = db as unknown as import('@almadar-io/agent').FirestoreDb;
+    const firestoreDb: import('@almadar-io/agent').FirestoreDb = { collection: (name: string) => db.collection(name) };
     const memoryManager = await getMemoryManager();
     sessionManager = new SessionManager({
       mode: 'firestore',

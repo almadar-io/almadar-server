@@ -29,7 +29,7 @@ export interface PersistedEvent {
   /** Trace ID for distributed tracing correlation */
   traceId: string;
   /** Optional metadata */
-  meta?: Record<string, unknown>;
+  meta?: { [key: string]: string | number | boolean | null | undefined };
 }
 
 /** Query filters for replaying events */

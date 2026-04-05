@@ -13,6 +13,9 @@
 
 import type { ServiceContract, ServiceEvents } from '@almadar/core';
 
+/** Entity data record: field name to field value. */
+export type EntityRecord = { [fieldName: string]: string | number | boolean | Date | null | string[] };
+
 // ============================================================================
 // Data Service
 // ============================================================================
@@ -28,11 +31,11 @@ export type DataServiceActions = {
     result: { item: unknown | null };
   };
   create: {
-    params: { collection: string; data: Record<string, unknown> };
+    params: { collection: string; data: EntityRecord };
     result: { item: unknown };
   };
   update: {
-    params: { collection: string; id: string; data: Record<string, unknown> };
+    params: { collection: string; id: string; data: EntityRecord };
     result: { item: unknown | null };
   };
   delete: {
@@ -107,11 +110,11 @@ export type ServiceDiscoveryContract = ServiceContract<ServiceDiscoveryActions>;
 
 /** Events emitted by entity CRUD operations. */
 export type EntityCrudEventMap = {
-  [K in `${string}_CREATED`]: Record<string, unknown>;
+  [K in `${string}_CREATED`]: EntityRecord;
 } & {
-  [K in `${string}_UPDATED`]: Record<string, unknown>;
+  [K in `${string}_UPDATED`]: EntityRecord;
 } & {
-  [K in `${string}_DELETED`]: Record<string, unknown>;
+  [K in `${string}_DELETED`]: EntityRecord;
 };
 
 /** Events emitted/consumed by the server infrastructure. */

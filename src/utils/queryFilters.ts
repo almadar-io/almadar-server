@@ -96,8 +96,11 @@ const RESERVED_PARAMS = new Set([
  * }
  * ```
  */
+/** URL query parameters from Express req.query. */
+export interface QueryParams { [key: string]: string | string[] | undefined }
+
 export function parseQueryFilters(
-  query: Record<string, unknown>
+  query: QueryParams
 ): ParsedFilter[] {
   const filters: ParsedFilter[] = [];
 
@@ -224,12 +227,12 @@ export interface PaginationParams {
  * Parses page, pageSize/limit, sortBy/orderBy, and sortOrder/orderDirection
  * from query parameters with sensible defaults.
  *
- * @param {Record<string, unknown>} query - Query object containing pagination params
- * @param {Partial<PaginationParams>} [defaults] - Default values for pagination
- * @returns {PaginationParams} Extracted pagination parameters
+ * @param query - Query object containing pagination params
+ * @param defaults - Default values for pagination
+ * @returns Extracted pagination parameters
  */
 export function extractPaginationParams(
-  query: Record<string, unknown>,
+  query: QueryParams,
   defaults: Partial<PaginationParams> = {}
 ): PaginationParams {
   return {

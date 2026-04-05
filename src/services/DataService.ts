@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import type { StoreContract, StoreFilter } from '@almadar/core';
+import type { StoreContract, StoreFilter, EntityRow, FieldValue } from '@almadar/core';
 import { db } from '../lib/db.js';
 import { env } from '../lib/env.js';
 import { logger } from '../lib/logger.js';
@@ -20,6 +20,15 @@ import {
   applyFiltersToQuery,
   type ParsedFilter,
 } from '../utils/queryFilters.js';
+
+/**
+ * Access a field by dynamic key on an entity-like object.
+ * Single boundary cast for filter/sort/search operations
+ * where field names come from query params at runtime.
+ */
+function entityField<T>(item: T, key: string): FieldValue | undefined {
+  return (item as EntityRow)[key];
+}
 
 // ============================================================================
 // Types
@@ -147,9 +156,8 @@ class MockDataServiceAdapter implements DataService {
     // Apply field filters (server-side filtering)
     if (filters && filters.length > 0) {
       items = items.filter((item) => {
-        const record = item as Record<string, unknown>;
         return filters.every((filter) => {
-          const value = record[filter.field];
+          const value = entityField(item, filter.field);
           return applyFilterCondition(value, filter.operator, filter.value);
         });
       });
@@ -159,10 +167,10 @@ class MockDataServiceAdapter implements DataService {
     if (search && search.trim()) {
       const searchLower = search.toLowerCase();
       items = items.filter((item) => {
-        const record = item as Record<string, unknown>;
-        const fieldsToSearch = searchFields || Object.keys(record);
+        const keys = Object.keys(item as object);
+        const fieldsToSearch = searchFields || keys;
         return fieldsToSearch.some((field) => {
-          const value = record[field];
+          const value = entityField(item, field);
           if (value === null || value === undefined) return false;
           return String(value).toLowerCase().includes(searchLower);
         });
@@ -172,8 +180,8 @@ class MockDataServiceAdapter implements DataService {
     // Apply sorting
     if (sortBy) {
       items = [...items].sort((a, b) => {
-        const aVal = (a as Record<string, unknown>)[sortBy];
-        const bVal = (b as Record<string, unknown>)[sortBy];
+        const aVal = entityField(a, sortBy);
+        const bVal = entityField(b, sortBy);
         if (aVal === bVal) return 0;
         if (aVal === null || aVal === undefined) return 1;
         if (bVal === null || bVal === undefined) return -1;
@@ -222,7 +230,7 @@ class MockDataServiceAdapter implements DataService {
     let items = getMockDataService().list<T>(collection);
     for (const filter of filters) {
       items = items.filter((item) => {
-        const value = (item as Record<string, unknown>)[filter.field];
+        const value = entityField(item, filter.field as string);
         return applyFilterCondition(value, filter.op, filter.value);
       });
     }
@@ -309,10 +317,10 @@ class FirebaseDataService implements DataService {
     if (search && search.trim()) {
       const searchLower = search.toLowerCase();
       items = items.filter((item) => {
-        const record = item as Record<string, unknown>;
-        const fieldsToSearch = searchFields || Object.keys(record);
+        const keys = Object.keys(item as object);
+        const fieldsToSearch = searchFields || keys;
         return fieldsToSearch.some((field) => {
-          const value = record[field];
+          const value = entityField(item, field);
           if (value === null || value === undefined) return false;
           return String(value).toLowerCase().includes(searchLower);
         });
@@ -322,8 +330,8 @@ class FirebaseDataService implements DataService {
     // Apply sorting (in-memory if search was applied)
     if (sortBy && search) {
       items = [...items].sort((a, b) => {
-        const aVal = (a as Record<string, unknown>)[sortBy];
-        const bVal = (b as Record<string, unknown>)[sortBy];
+        const aVal = entityField(a, sortBy);
+        const bVal = entityField(b, sortBy);
         if (aVal === bVal) return 0;
         if (aVal === null || aVal === undefined) return 1;
         if (bVal === null || bVal === undefined) return -1;
@@ -429,7 +437,7 @@ class FirebaseDataService implements DataService {
     // Apply remaining filters in memory (e.g., 'contains')
     for (const filter of memoryFilters) {
       items = items.filter((item) => {
-        const value = (item as Record<string, unknown>)[filter.field];
+        const value = entityField(item, filter.field as string);
         return applyFilterCondition(value, filter.op, filter.value);
       });
     }

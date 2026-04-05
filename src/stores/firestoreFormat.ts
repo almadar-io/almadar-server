@@ -7,28 +7,43 @@
 
 import type { OrbitalSchema } from '@almadar/core';
 
+/** Firestore-safe document shape with serialized nested fields. */
+export interface FirestoreSchemaDoc {
+  [key: string]: unknown;
+  _orbitalsJson?: string;
+  orbitalCount?: number;
+  _traitsJson?: string;
+  traitCount?: number;
+  _servicesJson?: string;
+  serviceCount?: number;
+}
+
 /**
  * Convert OrbitalSchema to Firestore-safe format.
  *
  * Serializes orbitals, traits, and services to JSON strings to avoid
  * Firestore's 20-level nesting limit.
  */
-export function toFirestoreFormat(schema: OrbitalSchema): Record<string, unknown> {
-  const data = { ...(schema as unknown as Record<string, unknown>) };
+export function toFirestoreFormat(schema: OrbitalSchema): FirestoreSchemaDoc {
+  const data: FirestoreSchemaDoc = {};
+  // Copy all schema fields
+  for (const [key, value] of Object.entries(schema)) {
+    data[key] = value;
+  }
 
   // Serialize orbitals array to JSON string
   if (schema.orbitals) {
     data._orbitalsJson = JSON.stringify(schema.orbitals);
     data.orbitalCount = schema.orbitals.length;
-    delete data.orbitals;
+    delete data['orbitals'];
   }
 
   // Serialize traits array to JSON string (if present at schema level)
-  if (data.traits) {
-    const traits = data.traits as unknown[];
+  if (data['traits']) {
+    const traits = data['traits'] as unknown[];
     data._traitsJson = JSON.stringify(traits);
     data.traitCount = traits.length;
-    delete data.traits;
+    delete data['traits'];
   }
 
   // Serialize services array to JSON string
@@ -46,8 +61,8 @@ export function toFirestoreFormat(schema: OrbitalSchema): Record<string, unknown
  *
  * Deserializes JSON strings back to arrays.
  */
-export function fromFirestoreFormat(data: Record<string, unknown>): OrbitalSchema {
-  const result = { ...data };
+export function fromFirestoreFormat(data: FirestoreSchemaDoc): OrbitalSchema {
+  const result: FirestoreSchemaDoc = { ...data };
 
   // Restore orbitals from _orbitalsJson
   if (result._orbitalsJson && typeof result._orbitalsJson === 'string') {
@@ -83,5 +98,5 @@ export function fromFirestoreFormat(data: Record<string, unknown>): OrbitalSchem
     }
   }
 
-  return result as unknown as OrbitalSchema;
+  return result as OrbitalSchema;
 }

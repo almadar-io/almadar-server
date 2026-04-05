@@ -141,7 +141,7 @@ export async function resetSessionManager() {
   const m = await import('./deepagent/session.js');
   return m.resetSessionManager();
 }
-export async function createServerSkillAgent(options: Record<string, unknown>) {
+export async function createServerSkillAgent(options: import('@almadar-io/agent').SkillAgentOptions) {
   const m = await import('./deepagent/skill-agent.js');
   return m.createServerSkillAgent(options as Parameters<typeof m.createServerSkillAgent>[0]);
 }

@@ -19,7 +19,7 @@ interface BroadcastEvent {
   type: string;
   payload?: unknown;
   timestamp?: number;
-  source?: Record<string, unknown>;
+  source?: { [key: string]: string | number | boolean | null };
 }
 
 /**

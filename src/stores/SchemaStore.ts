@@ -7,7 +7,7 @@
 
 import type { OrbitalSchema, StatsView, AppSummary, SaveOptions, SaveResult } from '@almadar/core';
 import { getFirestore } from '../lib/db.js';
-import { toFirestoreFormat, fromFirestoreFormat } from './firestoreFormat.js';
+import { toFirestoreFormat, fromFirestoreFormat, type FirestoreSchemaDoc } from './firestoreFormat.js';
 import { SchemaProtectionService } from './SchemaProtectionService.js';
 import type { SnapshotStore } from './SnapshotStore.js';
 
@@ -44,8 +44,8 @@ export class SchemaStore {
 
       if (!appDoc.exists) return null;
 
-      const data = appDoc.data() as Record<string, unknown>;
-      const hasOrbitals = data.orbitals || data._orbitalsJson;
+      const data = appDoc.data() as FirestoreSchemaDoc;
+      const hasOrbitals = data['orbitals'] || data._orbitalsJson;
       if (!data.name || !hasOrbitals) return null;
 
       const schema = fromFirestoreFormat(data);
@@ -234,12 +234,13 @@ export class SchemaStore {
     const entities = orbitals.length;
     const pages = orbitals.reduce((n, o) => n + (o.pages?.length || 0), 0);
 
-    const allTraits = [
-      ...((schema as unknown as Record<string, unknown>).traits as unknown[] || []),
-      ...orbitals.flatMap((o) =>
-        (o.traits || []).filter((t) => typeof t !== 'string' && 'stateMachine' in t),
-      ),
-    ] as Array<{ stateMachine?: { states?: unknown[]; events?: unknown[]; transitions?: unknown[] } }>;
+    // Gather traits from both schema-level and orbital-level
+    interface TraitWithSM { stateMachine?: { states?: unknown[]; events?: unknown[]; transitions?: unknown[] } }
+    const schemaLevelTraits = ((schema as { traits?: unknown[] }).traits ?? []) as TraitWithSM[];
+    const orbitalTraits = orbitals.flatMap((o) =>
+      (o.traits || []).filter((t): t is TraitWithSM => typeof t !== 'string' && 'stateMachine' in (t as object)),
+    );
+    const allTraits: TraitWithSM[] = [...schemaLevelTraits, ...orbitalTraits];
 
     return {
       states: allTraits.flatMap((t) => t.stateMachine?.states || []).length,

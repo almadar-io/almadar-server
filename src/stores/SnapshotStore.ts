@@ -7,7 +7,7 @@
 
 import type { OrbitalSchema, SnapshotDocument, HistoryMeta } from '@almadar/core';
 import { getFirestore } from '../lib/db.js';
-import { toFirestoreFormat, fromFirestoreFormat } from './firestoreFormat.js';
+import { toFirestoreFormat, fromFirestoreFormat, type FirestoreSchemaDoc } from './firestoreFormat.js';
 
 const SNAPSHOTS_COLLECTION = 'snapshots';
 
@@ -118,11 +118,11 @@ export class SnapshotStore {
 
     if (query.empty) return null;
     const snapshot = query.docs[0].data() as SnapshotDocument;
-    return fromFirestoreFormat(snapshot.schema as Record<string, unknown>);
+    return fromFirestoreFormat(snapshot.schema as FirestoreSchemaDoc);
   }
 
   /** Get the schema from a snapshot (deserialized) */
   getSchemaFromSnapshot(snapshot: SnapshotDocument): OrbitalSchema {
-    return fromFirestoreFormat(snapshot.schema as Record<string, unknown>);
+    return fromFirestoreFormat(snapshot.schema as FirestoreSchemaDoc);
   }
 }

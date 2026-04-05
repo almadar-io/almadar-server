@@ -83,7 +83,7 @@ export async function setupStateSyncWebSocket(io: SocketServer): Promise<void> {
       }
 
       // Process through sync manager
-      stateSync.receiveRemoteChange(event as unknown as import('@almadar-io/agent').StateChangeEvent);
+      stateSync.receiveRemoteChange({ ...event } as import('@almadar-io/agent').StateChangeEvent);
 
       // Broadcast to other clients of same user
       socket.to(`user:${userId}`).emit('remoteChange', event);

@@ -9,7 +9,10 @@
  * @packageDocumentation
  */
 
-type EventHandler = (payload: unknown, meta?: Record<string, unknown>) => void;
+/** Metadata attached to event emissions (source orbital, entity context). */
+export interface EventMeta { [key: string]: string | number | boolean | null | undefined }
+
+type EventHandler = (payload: unknown, meta?: EventMeta) => void;
 
 export interface EventLogEntry {
   event: string;
@@ -49,7 +52,7 @@ export class EventBus {
     this.handlers.get(event)?.delete(handler);
   }
 
-  emit(event: string, payload?: unknown, meta?: Record<string, unknown>): void {
+  emit(event: string, payload?: unknown, meta?: EventMeta): void {
     if (this.debug) {
       console.log(`[EventBus] Emitting ${event}:`, payload);
     }
@@ -144,7 +147,7 @@ export function resetServerEventBus(): void {
 export function emitEntityEvent(
   entityType: string,
   action: 'CREATED' | 'UPDATED' | 'DELETED',
-  payload: Record<string, unknown>
+  payload: EventMeta
 ): void {
   const eventType = `${entityType.toUpperCase()}_${action}`;
   getServerEventBus().emit(eventType, payload, { orbital: entityType });

@@ -112,10 +112,10 @@ export class MockDataService {
   /**
    * Generate a single mock item based on field schemas.
    */
-  private generateMockItem(entityName: string, fields: FieldSchema[], index: number): BaseEntity & Record<string, unknown> {
+  private generateMockItem(entityName: string, fields: FieldSchema[], index: number): BaseEntity & { [field: string]: unknown } {
     const id = this.nextId(entityName);
     const now = new Date();
-    const item: Record<string, unknown> = {
+    const item: { [field: string]: unknown } = {
       id,
       createdAt: faker.date.past({ years: 1 }),
       updatedAt: now,
@@ -128,7 +128,7 @@ export class MockDataService {
       item[field.name] = this.generateFieldValue(entityName, field, index);
     }
 
-    return item as BaseEntity & Record<string, unknown>;
+    return item as BaseEntity & { [field: string]: unknown };
   }
 
   /**

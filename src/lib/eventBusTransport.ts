@@ -12,7 +12,7 @@
  * @packageDocumentation
  */
 
-import { EventBus, type EventLogEntry } from './eventBus.js';
+import { EventBus, type EventLogEntry, type EventMeta } from './eventBus.js';
 
 // ============================================================================
 // Transport Interface
@@ -24,7 +24,7 @@ import { EventBus, type EventLogEntry } from './eventBus.js';
 export interface TransportMessage {
   event: string;
   payload: unknown;
-  meta?: Record<string, unknown>;
+  meta?: EventMeta;
   /** Source instance ID to prevent echo loops */
   sourceId: string;
   timestamp: number;
@@ -203,7 +203,7 @@ export class DistributedEventBus {
   /**
    * Emit an event locally and publish to transport for other processes.
    */
-  emit(event: string, payload?: unknown, meta?: Record<string, unknown>): void {
+  emit(event: string, payload?: unknown, meta?: EventMeta): void {
     // Always fire locally
     this.localBus.emit(event, payload, meta);
 
@@ -224,12 +224,12 @@ export class DistributedEventBus {
   }
 
   /** Subscribe to an event */
-  on(event: string, handler: (payload: unknown, meta?: Record<string, unknown>) => void): () => void {
+  on(event: string, handler: (payload: unknown, meta?: EventMeta) => void): () => void {
     return this.localBus.on(event, handler);
   }
 
   /** Unsubscribe from an event */
-  off(event: string, handler: (payload: unknown, meta?: Record<string, unknown>) => void): void {
+  off(event: string, handler: (payload: unknown, meta?: EventMeta) => void): void {
     this.localBus.off(event, handler);
   }
 

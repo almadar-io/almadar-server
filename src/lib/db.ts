@@ -42,7 +42,7 @@ export function initializeFirebase(): admin.app.App {
   const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
   if (serviceAccountPath) {
     // Dynamic require for JSON service account file at runtime
-    const serviceAccount = require(serviceAccountPath) as Record<string, unknown>;
+    const serviceAccount = require(serviceAccountPath) as admin.ServiceAccount;
     return admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
       projectId,

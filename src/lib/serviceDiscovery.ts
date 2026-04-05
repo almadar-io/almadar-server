@@ -40,7 +40,7 @@ export interface ServiceRegistration {
   /** Service status */
   status: 'starting' | 'ready' | 'degraded' | 'stopping';
   /** Optional metadata */
-  metadata?: Record<string, unknown>;
+  metadata?: { [key: string]: string | number | boolean | null };
 }
 
 /** Options for the service registry */
