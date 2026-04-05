@@ -141,9 +141,9 @@ export async function resetSessionManager() {
   const m = await import('./deepagent/session.js');
   return m.resetSessionManager();
 }
-export async function createServerSkillAgent(options: Record<string, unknown>): Promise<unknown> {
+export async function createServerSkillAgent(options: Parameters<Awaited<typeof import('./deepagent/skill-agent.js')>['createServerSkillAgent']>[0]): Promise<unknown> {
   const m = await import('./deepagent/skill-agent.js');
-  return m.createServerSkillAgent(options as Parameters<typeof m.createServerSkillAgent>[0]);
+  return m.createServerSkillAgent(options);
 }
 
 // Multi-user middleware (requires @almadar-io/agent)

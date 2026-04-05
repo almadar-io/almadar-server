@@ -98,5 +98,5 @@ export function fromFirestoreFormat(data: FirestoreSchemaDoc): OrbitalSchema {
     }
   }
 
-  return result as unknown as OrbitalSchema;
+  return result as OrbitalSchema;
 }
