@@ -9,10 +9,10 @@ importers:
   .:
     dependencies:
       '@almadar/agent':
-        specifier: '>=2.0.1'
+        specifier: '>=2.13.0'
         version: 3.5.13(@langchain/core@1.1.33(@opentelemetry/api@1.9.0)(openai@6.31.0(ws@8.19.0)(zod@3.25.76))(ws@8.19.0))(@langchain/langgraph-checkpoint@1.0.0(@langchain/core@1.1.33(@opentelemetry/api@1.9.0)(openai@6.31.0(ws@8.19.0)(zod@3.25.76))(ws@8.19.0)))(@langchain/langgraph@1.2.2(@langchain/core@1.1.33(@opentelemetry/api@1.9.0)(openai@6.31.0(ws@8.19.0)(zod@3.25.76))(ws@8.19.0))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(zod@3.25.76))(@opentelemetry/api@1.9.0)(deepagents@1.8.3(@opentelemetry/api@1.9.0)(openai@6.31.0(ws@8.19.0)(zod@3.25.76))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(ws@8.19.0))(openai@6.31.0(ws@8.19.0)(zod@3.25.76))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(ws@8.19.0)
       '@almadar/core':
-        specifier: '>=2.1.0'
+        specifier: '>=2.13.0'
         version: 2.5.3
       '@faker-js/faker':
         specifier: ^9.3.0
@@ -37,7 +37,7 @@ importers:
         version: 3.25.76
     devDependencies:
       '@almadar/eslint-plugin':
-        specifier: '>=2.3.0'
+        specifier: '>=2.13.0'
         version: 2.4.6(eslint@10.0.0)
       '@types/cors':
         specifier: ^2.8.17
