@@ -238,8 +238,8 @@ export class SchemaStore {
     interface TraitWithSM { stateMachine?: { states?: unknown[]; events?: unknown[]; transitions?: unknown[] } }
     const schemaLevelTraits = ((schema as { traits?: unknown[] }).traits ?? []) as TraitWithSM[];
     const orbitalTraits = orbitals.flatMap((o) =>
-      (o.traits || []).filter((t): t is TraitWithSM => typeof t !== 'string' && 'stateMachine' in (t as object)),
-    );
+      (o.traits || []).filter((t) => typeof t === 'object' && t !== null && !('ref' in t) && 'stateMachine' in t),
+    ) as TraitWithSM[];
     const allTraits: TraitWithSM[] = [...schemaLevelTraits, ...orbitalTraits];
 
     return {

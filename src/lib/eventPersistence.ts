@@ -210,7 +210,7 @@ export class EventPersistence {
       source: meta?.source ?? this.options.defaultSource,
       timestamp: Date.now(),
       traceId: meta?.traceId ?? `trace_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      meta: meta ? { ...meta } : undefined,
+      meta: meta ? { ...meta } as PersistedEvent['meta'] : undefined,
     };
 
     if (this.options.enabled) {

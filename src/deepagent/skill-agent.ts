@@ -6,6 +6,7 @@
  * @packageDocumentation
  */
 
+import type { SkillAgentResult } from '@almadar-io/agent';
 import { getMemoryManager } from './memory.js';
 import { getSessionManager } from './session.js';
 
@@ -26,7 +27,7 @@ interface ServerSkillAgentOptions {
  */
 export async function createServerSkillAgent(
   options: ServerSkillAgentOptions,
-) {
+): Promise<SkillAgentResult> {
   const agent = await loadAgent();
   const memoryManager = await getMemoryManager();
   const sessionManager = await getSessionManager();

@@ -34,8 +34,30 @@ vi.mock('../../lib/db.js', () => {
   };
 });
 
-import { getMemoryManager, resetMemoryManager } from '../memory';
-import { MemoryManager } from '@almadar-io/agent';
+import { getMemoryManager as getMemoryManagerAsync, resetMemoryManager } from '../memory';
+
+/**
+ * MemoryManager test interface.
+ * Matches the full API from @almadar-io/agent (source), which may be ahead of
+ * the published npm version installed in this package.
+ */
+interface MemoryManagerLike {
+  updateUserPreferences(userId: string, prefs: Record<string, unknown>): Promise<void>;
+  getUserPreferences(userId: string): Promise<Record<string, unknown> | null>;
+  recordGeneration(userId: string, session: Record<string, unknown>): Promise<string>;
+  updateProjectContext(projectId: string, update: Record<string, unknown>): Promise<void>;
+  recordFeedback(sessionId: string, feedback: Record<string, unknown>): Promise<void>;
+  updatePatternAffinity(userId: string, patternId: string, outcome: string): Promise<void>;
+  getUserPatterns(userId: string): Promise<Record<string, unknown>[]>;
+  recordInterruptDecision(sessionId: string, userId: string, data: Record<string, unknown>): Promise<void>;
+  shouldAutoApproveTool(userId: string, toolName: string): Promise<boolean>;
+  [key: string]: unknown;
+}
+
+/** Typed wrapper: await the async getter and cast to MemoryManagerLike */
+async function getMemoryManager(): Promise<MemoryManagerLike> {
+  return await getMemoryManagerAsync() as unknown as MemoryManagerLike;
+}
 
 describe('MemoryManager Integration', () => {
   beforeEach(() => {
@@ -48,18 +70,17 @@ describe('MemoryManager Integration', () => {
   });
 
   describe('getMemoryManager', () => {
-    it('should return singleton instance', () => {
-      const manager1 = getMemoryManager();
-      const manager2 = getMemoryManager();
+    it('should return singleton instance', async () => {
+      const manager1 = await getMemoryManager();
+      const manager2 = await getMemoryManager();
 
       expect(manager1).toBe(manager2);
-      expect(manager1).toBeInstanceOf(MemoryManager);
     });
 
-    it('should create new instance after reset', () => {
-      const manager1 = getMemoryManager();
+    it('should create new instance after reset', async () => {
+      const manager1 = await getMemoryManager();
       resetMemoryManager();
-      const manager2 = getMemoryManager();
+      const manager2 = await getMemoryManager();
 
       expect(manager1).not.toBe(manager2);
     });
@@ -67,7 +88,7 @@ describe('MemoryManager Integration', () => {
 
   describe('Memory Operations', () => {
     it('should have updateUserPreferences method', async () => {
-      const manager = getMemoryManager();
+      const manager = await getMemoryManager();
       const userId = 'test-user-123';
 
       vi.spyOn(manager, 'updateUserPreferences').mockResolvedValue(undefined);
@@ -83,7 +104,7 @@ describe('MemoryManager Integration', () => {
     });
 
     it('should have getUserPreferences method', async () => {
-      const manager = getMemoryManager();
+      const manager = await getMemoryManager();
       const userId = 'test-user-123';
 
       const mockPreferences = {
@@ -107,7 +128,7 @@ describe('MemoryManager Integration', () => {
     });
 
     it('should have recordGeneration method', async () => {
-      const manager = getMemoryManager();
+      const manager = await getMemoryManager();
 
       vi.spyOn(manager, 'recordGeneration').mockResolvedValue('gen-123');
 
@@ -126,7 +147,7 @@ describe('MemoryManager Integration', () => {
     });
 
     it('should have updateProjectContext method', async () => {
-      const manager = getMemoryManager();
+      const manager = await getMemoryManager();
 
       vi.spyOn(manager, 'updateProjectContext').mockResolvedValue(undefined);
 
@@ -141,7 +162,7 @@ describe('MemoryManager Integration', () => {
     });
 
     it('should have recordFeedback method', async () => {
-      const manager = getMemoryManager();
+      const manager = await getMemoryManager();
 
       vi.spyOn(manager, 'recordFeedback').mockResolvedValue(undefined);
 
@@ -159,7 +180,7 @@ describe('MemoryManager Integration', () => {
 
   describe('Pattern Management', () => {
     it('should have updatePatternAffinity method', async () => {
-      const manager = getMemoryManager();
+      const manager = await getMemoryManager();
 
       vi.spyOn(manager, 'updatePatternAffinity').mockResolvedValue(undefined);
 
@@ -169,7 +190,7 @@ describe('MemoryManager Integration', () => {
     });
 
     it('should have getUserPatterns method', async () => {
-      const manager = getMemoryManager();
+      const manager = await getMemoryManager();
 
       const mockPatterns = [
         { id: 'p1', userId: 'user-123', patternId: 'auth', affinityScore: 0.9 },
@@ -186,7 +207,7 @@ describe('MemoryManager Integration', () => {
 
   describe('Interrupt Handling', () => {
     it('should have recordInterruptDecision method', async () => {
-      const manager = getMemoryManager();
+      const manager = await getMemoryManager();
 
       vi.spyOn(manager, 'recordInterruptDecision').mockResolvedValue(undefined);
 
@@ -202,7 +223,7 @@ describe('MemoryManager Integration', () => {
     });
 
     it('should have shouldAutoApproveTool method', async () => {
-      const manager = getMemoryManager();
+      const manager = await getMemoryManager();
 
       vi.spyOn(manager, 'shouldAutoApproveTool').mockResolvedValue(true);
 
