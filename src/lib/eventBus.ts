@@ -9,8 +9,13 @@
  * @packageDocumentation
  */
 
-/** Metadata attached to event emissions (source orbital, entity context). */
-export interface EventMeta { [key: string]: string | number | boolean | null | undefined }
+import type { LogMeta } from '@almadar/core';
+
+/**
+ * Event metadata type. Re-exports LogMeta from @almadar/core
+ * so existing consumers importing EventMeta continue to work.
+ */
+export type EventMeta = LogMeta;
 
 type EventHandler = (payload: unknown, meta?: EventMeta) => void;
 
