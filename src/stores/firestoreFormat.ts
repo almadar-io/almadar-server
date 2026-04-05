@@ -5,11 +5,15 @@
  * OrbitalSchema fields (orbitals, traits, services) to JSON strings.
  */
 
-import type { OrbitalSchema } from '@almadar/core';
+import type { OrbitalSchema, Orbital } from '@almadar/core';
 
 /** Firestore-safe document shape with serialized nested fields. */
 export interface FirestoreSchemaDoc {
   [key: string]: unknown;
+  /** Always present — not serialized (simple string). */
+  name: string;
+  /** Present after deserialization from _orbitalsJson, or if stored directly. */
+  orbitals?: Orbital[];
   _orbitalsJson?: string;
   orbitalCount?: number;
   _traitsJson?: string;
@@ -25,7 +29,7 @@ export interface FirestoreSchemaDoc {
  * Firestore's 20-level nesting limit.
  */
 export function toFirestoreFormat(schema: OrbitalSchema): FirestoreSchemaDoc {
-  const data: FirestoreSchemaDoc = {};
+  const data: FirestoreSchemaDoc = { name: schema.name };
   // Copy all schema fields
   for (const [key, value] of Object.entries(schema)) {
     data[key] = value;
