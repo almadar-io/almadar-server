@@ -12,7 +12,8 @@
  * @packageDocumentation
  */
 
-import { EventBus, type EventLogEntry, type EventMeta } from './eventBus.js';
+import type { BusEventListener, BusEventSource, EventPayload } from '@almadar/core';
+import { EventBus, type EventLogEntry } from './eventBus.js';
 
 // ============================================================================
 // Transport Interface
@@ -23,8 +24,8 @@ import { EventBus, type EventLogEntry, type EventMeta } from './eventBus.js';
  */
 export interface TransportMessage {
   event: string;
-  payload: unknown;
-  meta?: EventMeta;
+  payload?: EventPayload;
+  source?: BusEventSource;
   /** Source instance ID to prevent echo loops */
   sourceId: string;
   timestamp: number;
@@ -193,7 +194,7 @@ export class DistributedEventBus {
       // Relay to local bus without re-publishing to transport
       this.isRelaying = true;
       try {
-        this.localBus.emit(message.event, message.payload, message.meta);
+        this.localBus.emit(message.event, message.payload, message.source);
       } finally {
         this.isRelaying = false;
       }
@@ -203,16 +204,16 @@ export class DistributedEventBus {
   /**
    * Emit an event locally and publish to transport for other processes.
    */
-  emit(event: string, payload?: unknown, meta?: EventMeta): void {
+  emit(event: string, payload?: EventPayload, source?: BusEventSource): void {
     // Always fire locally
-    this.localBus.emit(event, payload, meta);
+    this.localBus.emit(event, payload, source);
 
     // Publish to transport (unless this emit was triggered by a transport relay)
     if (!this.isRelaying) {
       const message: TransportMessage = {
         event,
         payload,
-        meta,
+        source,
         sourceId: this.instanceId,
         timestamp: Date.now(),
       };
@@ -224,12 +225,12 @@ export class DistributedEventBus {
   }
 
   /** Subscribe to an event */
-  on(event: string, handler: (payload: unknown, meta?: EventMeta) => void): () => void {
+  on(event: string, handler: BusEventListener): () => void {
     return this.localBus.on(event, handler);
   }
 
   /** Unsubscribe from an event */
-  off(event: string, handler: (payload: unknown, meta?: EventMeta) => void): void {
+  off(event: string, handler: BusEventListener): void {
     this.localBus.off(event, handler);
   }
 

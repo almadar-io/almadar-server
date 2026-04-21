@@ -13,16 +13,6 @@ import { getServerEventBus } from './eventBus.js';
 import { logger } from './logger.js';
 
 /**
- * Event structure for broadcasting
- */
-interface BroadcastEvent {
-  type: string;
-  payload?: unknown;
-  timestamp?: number;
-  source?: { [key: string]: string | number | boolean | null };
-}
-
-/**
  * WebSocket server instance (singleton)
  */
 let wss: WebSocketServer | null = null;
@@ -76,10 +66,13 @@ export function setupEventBroadcast(server: Server, path: string = '/ws/events')
 
         // Handle client-to-server events if needed
         if (message.type && message.payload) {
-          // Emit to server event bus with client source
+          // Emit to server event bus with client source. BusEventSource
+          // carries orbital/trait/transition/tick — the WebSocket entry
+          // stamps `orbital: 'client'` and threads the client ID through
+          // `trait` so cross-trait listeners can filter by it.
           getServerEventBus().emit(message.type, message.payload, {
             orbital: 'client',
-            entity: clientId,
+            trait: clientId,
           });
         }
       } catch (error) {
@@ -97,15 +90,14 @@ export function setupEventBroadcast(server: Server, path: string = '/ws/events')
   });
 
   // Subscribe to all server events and broadcast to clients
-  getServerEventBus().on('*', (event: unknown) => {
+  getServerEventBus().on('*', (event) => {
     if (!wss) return;
 
-    const typedEvent = event as BroadcastEvent;
     const message = JSON.stringify({
-      type: typedEvent.type,
-      payload: typedEvent.payload,
-      timestamp: typedEvent.timestamp,
-      source: typedEvent.source,
+      type: event.type,
+      payload: event.payload,
+      timestamp: event.timestamp,
+      source: event.source,
     });
 
     let broadcastCount = 0;
@@ -117,7 +109,7 @@ export function setupEventBroadcast(server: Server, path: string = '/ws/events')
     });
 
     if (broadcastCount > 0) {
-      logger.debug(`[WebSocket] Broadcast ${typedEvent.type} to ${broadcastCount} client(s)`);
+      logger.debug(`[WebSocket] Broadcast ${event.type} to ${broadcastCount} client(s)`);
     }
   });
 
