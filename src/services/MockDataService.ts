@@ -25,6 +25,13 @@ export interface FieldSchema {
   max?: number;
   fakerMethod?: string;
   relatedEntity?: string;
+  /**
+   * Declared default value from the .orb schema. When present, the mock
+   * generator returns this verbatim instead of a faker-generated random,
+   * matching `@almadar/runtime`'s MockPersistenceAdapter behavior. The
+   * special string `"@now"` resolves to the current ISO timestamp.
+   */
+  default?: string | number | boolean;
 }
 
 export interface EntitySchema {
@@ -139,6 +146,18 @@ export class MockDataService {
    * Generate a mock value for a field based on its schema.
    */
   private generateFieldValue(entityName: string, field: FieldSchema, index: number): unknown {
+    // Honor the schema-declared default first — matches
+    // `@almadar/runtime`'s MockPersistenceAdapter so a field declared
+    // `tokenCount : number = 0` shows 0 in compiled-path screenshots
+    // instead of a faker random. `@now` is the conventional ISO-time
+    // sentinel used elsewhere in the runtime.
+    if (field.default !== undefined) {
+      if (field.default === '@now') {
+        return new Date().toISOString();
+      }
+      return field.default;
+    }
+
     // Handle optional fields - 80% chance of having a value
     if (!field.required && Math.random() > 0.8) {
       return undefined;
