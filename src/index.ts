@@ -14,6 +14,11 @@
 // Lib exports
 export { env } from './lib/env.js';
 export { logger } from './lib/logger.js';
+// Namespaced structured logger — same shape as the runtime + UI loggers.
+// Generated server handlers use this for the persist/emit hot path so the
+// `[almadar:server:effects]` lines show up in the verifier's `[almadar:*]`
+// stdout filter (orbital-verify-unified server-lifecycle.ts).
+export { createLogger, type Logger, type LogData } from './almadarLogger.js';
 export { EventBus, getServerEventBus, resetServerEventBus, emitEntityEvent, type EventLogEntry } from './lib/eventBus.js';
 export {
   DistributedEventBus,
