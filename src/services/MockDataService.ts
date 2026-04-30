@@ -146,15 +146,14 @@ export class MockDataService {
    * Generate a mock value for a field based on its schema.
    */
   private generateFieldValue(entityName: string, field: FieldSchema, index: number): unknown {
-    // Honor the schema-declared default first — matches
-    // `@almadar/runtime`'s MockPersistenceAdapter so a field declared
-    // `tokenCount : number = 0` shows 0 in compiled-path screenshots
-    // instead of a faker random. `@now` is the conventional ISO-time
-    // sentinel used elsewhere in the runtime.
-    if (field.default !== undefined) {
-      if (field.default === '@now') {
-        return new Date().toISOString();
-      }
+    // Mock-seed default policy: numeric fields preserve their declared
+    // default (so `tokenCount : number = 0` stays 0), every other type
+    // falls through to faker. Mirrors the gate in the compiled-path
+    // codegen (`backend.rs:generate_seed_mock_data`) and the runtime
+    // mirror (`MockPersistenceAdapter.generateFieldValue`). This is a
+    // defense-in-depth gate: even if a stale `seedMockData.ts` carries
+    // a non-numeric `default: ""`, faker still wins here.
+    if (field.type === 'number' && field.default !== undefined) {
       return field.default;
     }
 
