@@ -36,14 +36,16 @@ export class SnapshotStore {
     const db = getFirestore();
     const snapshotId = `snapshot_${Date.now()}`;
 
-    const snapshotDoc: SnapshotDocument = {
+    // Firestore-storage shape: schema is serialized via toFirestoreFormat,
+    // so the on-disk doc carries FirestoreSchemaDoc, not the canonical
+    // OrbitalSchema. fromFirestoreFormat rehydrates on read. Annotating
+    // this construction as SnapshotDocument would force a type lie.
+    await db.doc(`${this.getCollectionPath(uid, appId)}/${snapshotId}`).set({
       id: snapshotId,
       timestamp: Date.now(),
       schema: toFirestoreFormat(schema),
       reason,
-    };
-
-    await db.doc(`${this.getCollectionPath(uid, appId)}/${snapshotId}`).set(snapshotDoc);
+    });
 
     // Update history metadata
     const appDocRef = db.doc(this.getAppDocPath(uid, appId));

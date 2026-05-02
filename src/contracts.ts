@@ -11,7 +11,7 @@
  * @packageDocumentation
  */
 
-import type { ServiceContract, ServiceEvents, EntityRow } from '@almadar/core';
+import type { ServiceContract, ServiceEvents, EntityRow, EventPayload, ServiceParams } from '@almadar/core';
 
 // ============================================================================
 // Data Service
@@ -21,19 +21,19 @@ import type { ServiceContract, ServiceEvents, EntityRow } from '@almadar/core';
 export type DataServiceActions = {
   list: {
     params: { collection: string };
-    result: { items: unknown[] };
+    result: { items: EntityRow[] };
   };
   getById: {
     params: { collection: string; id: string };
-    result: { item: unknown | null };
+    result: { item: EntityRow | null };
   };
   create: {
-    params: { collection: string; data: EntityRow };
-    result: { item: unknown };
+    params: { collection: string; data: ServiceParams };
+    result: { item: EntityRow };
   };
   update: {
-    params: { collection: string; id: string; data: EntityRow };
-    result: { item: unknown | null };
+    params: { collection: string; id: string; data: ServiceParams };
+    result: { item: EntityRow | null };
   };
   delete: {
     params: { collection: string; id: string };
@@ -51,7 +51,7 @@ export type DataServiceContract = ServiceContract<DataServiceActions>;
 /** Actions available on the event bus service. */
 export type EventBusActions = {
   emit: {
-    params: { event: string; payload?: unknown };
+    params: { event: string; payload?: ServiceParams };
     result: { delivered: number };
   };
   getListenerCounts: {
@@ -68,7 +68,7 @@ export type EventBusServiceContract = ServiceContract<EventBusActions>;
 // ============================================================================
 
 /** Shape of a discovered service instance. */
-interface DiscoveredService {
+interface DiscoveredService extends EventPayload {
   name: string;
   instanceId: string;
   host: string;
