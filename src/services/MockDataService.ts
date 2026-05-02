@@ -204,126 +204,14 @@ export class MockDataService {
     }
   }
 
-  /**
-   * Generate a string value based on field name heuristics.
-   * Generic name/title fields use a clean readable format (e.g., "Title 1").
-   * Specific fields (email, phone, etc.) use faker.
-   */
-  private generateStringValue(_entityName: string, field: FieldSchema, index: number): string {
-    const name = field.name.toLowerCase();
-
-    // If field has enumValues, use them (even if type is 'string')
+  private generateStringValue(_entityName: string, field: FieldSchema, _index: number): string {
     if (field.enumValues && field.enumValues.length > 0) {
       return faker.helpers.arrayElement(field.enumValues);
     }
-
-    // Identity fields
-    if (name.includes('email')) return faker.internet.email();
-    if (name === 'name' || name === 'fullname' || name === 'full_name') return faker.person.fullName();
-    if (name === 'firstname' || name === 'first_name') return faker.person.firstName();
-    if (name === 'lastname' || name === 'last_name') return faker.person.lastName();
-    if (name.includes('username') || name === 'handle') return faker.internet.username();
-
-    // Contact fields
-    if (name.includes('phone') || name.includes('mobile') || name.includes('tel')) return faker.phone.number();
-    if (name.includes('address') || name.includes('street')) return faker.location.streetAddress();
-    if (name.includes('city')) return faker.location.city();
-    if (name.includes('state') || name.includes('province')) return faker.location.state();
-    if (name.includes('country')) return faker.location.country();
-    if (name.includes('zip') || name.includes('postal')) return faker.location.zipCode();
-
-    // Content fields
-    if (name === 'title' || name === 'headline' || name === 'subject') return faker.lorem.sentence({ min: 3, max: 7 }).replace(/\.$/, '');
-    if (name === 'description' || name === 'summary' || name === 'bio' || name === 'about') return faker.lorem.paragraph(2);
-    if (name === 'content' || name === 'body' || name === 'text') return faker.lorem.paragraphs(2);
-    if (name === 'excerpt' || name === 'snippet' || name === 'preview') return faker.lorem.sentence({ min: 8, max: 15 });
-    if (name === 'label' || name === 'tag' || name === 'category') return faker.word.noun();
-    if (name === 'note' || name === 'comment' || name === 'message' || name === 'feedback') return faker.lorem.sentence();
-
-    // Status / type fields
-    if (name === 'status') return faker.helpers.arrayElement(['active', 'pending', 'completed', 'draft', 'archived']);
-    if (name === 'priority') return faker.helpers.arrayElement(['low', 'medium', 'high', 'critical']);
-    if (name === 'type' || name === 'kind') return faker.helpers.arrayElement(['standard', 'premium', 'basic', 'custom']);
-    if (name === 'role') return faker.helpers.arrayElement(['admin', 'editor', 'viewer', 'member']);
-    if (name === 'level' || name === 'tier') return faker.helpers.arrayElement(['beginner', 'intermediate', 'advanced', 'expert']);
-    if (name === 'severity') return faker.helpers.arrayElement(['info', 'warning', 'error', 'critical']);
-    if (name === 'difficulty') return faker.helpers.arrayElement(['easy', 'medium', 'hard']);
-
-    // Web / media fields
-    if (name.includes('url') || name.includes('website') || name.includes('link')) return faker.internet.url();
-    if (name.includes('avatar') || name.includes('image') || name.includes('photo') || name.includes('thumbnail')) return faker.image.avatar();
-    if (name.includes('color') || name.includes('colour')) return faker.color.human();
-    if (name.includes('uuid') || name === 'guid') return faker.string.uuid();
-    if (name.includes('icon')) return faker.helpers.arrayElement(['star', 'heart', 'check', 'alert-circle', 'info', 'folder', 'file', 'user']);
-    if (name === 'slug') return faker.helpers.slugify(faker.lorem.words(3));
-
-    // Organization / business fields
-    if (name === 'company' || name === 'organization' || name === 'org') return faker.company.name();
-    if (name === 'department') return faker.commerce.department();
-    if (name === 'product' || name === 'productname' || name === 'product_name') return faker.commerce.productName();
-    if (name === 'brand') return faker.company.name();
-    if (name === 'sku' || name === 'code') return faker.string.alphanumeric(8).toUpperCase();
-    if (name === 'currency') return faker.finance.currencyCode();
-    if (name.includes('price') || name.includes('cost') || name.includes('amount')) return faker.commerce.price();
-
-    // Location / geo fields
-    if (name === 'latitude' || name === 'lat') return String(faker.location.latitude());
-    if (name === 'longitude' || name === 'lng' || name === 'lon') return String(faker.location.longitude());
-    if (name === 'location' || name === 'place' || name === 'venue') return `${faker.location.city()}, ${faker.location.country()}`;
-    if (name === 'region' || name === 'zone' || name === 'area') return faker.location.state();
-
-    // Technical fields
-    if (name === 'ip' || name.includes('ipaddress') || name === 'ip_address') return faker.internet.ip();
-    if (name === 'useragent' || name === 'user_agent') return faker.internet.userAgent();
-    if (name === 'version' || name === 'firmware') return faker.system.semver();
-    if (name === 'platform' || name === 'os') return faker.helpers.arrayElement(['iOS', 'Android', 'Windows', 'macOS', 'Linux']);
-    if (name === 'browser') return faker.helpers.arrayElement(['Chrome', 'Firefox', 'Safari', 'Edge']);
-
-    // Measurement / unit fields
-    if (name === 'unit') return faker.helpers.arrayElement(['kg', 'lb', 'cm', 'm', 'L', 'mL', '°C', '°F', 'psi', 'rpm']);
-    if (name === 'metric') return faker.helpers.arrayElement(['temperature', 'pressure', 'humidity', 'speed', 'voltage']);
-    if (name === 'operator') return faker.helpers.arrayElement(['gt', 'lt', 'eq', 'gte', 'lte']);
-    if (name === 'format' || name === 'mimetype' || name === 'mime_type') return faker.system.mimeType();
-    if (name === 'extension' || name === 'ext') return faker.system.fileExt();
-    if (name === 'filename' || name === 'file_name') return faker.system.fileName();
-
-    // Fallback: generate realistic data based on common suffixes and patterns
-    if (name.endsWith('id') || name.endsWith('_id')) return faker.string.alphanumeric(8).toUpperCase();
-    if (name.endsWith('name') || name.endsWith('_name')) return faker.person.fullName();
-    if (name.endsWith('type') || name.endsWith('_type')) return faker.helpers.arrayElement(['standard', 'premium', 'basic', 'custom', 'special']);
-    if (name.endsWith('date') || name.endsWith('_date') || name.endsWith('at')) return faker.date.recent({ days: 90 }).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-    if (name.endsWith('count') || name.endsWith('_count')) return String(faker.number.int({ min: 1, max: 100 }));
-    if (name.includes('reason') || name.includes('detail')) return faker.lorem.sentence({ min: 4, max: 8 }).replace(/\.$/, '');
-    if (name.includes('field') || name.includes('key') || name.includes('attribute')) return faker.word.noun();
-    if (name.includes('value') || name.includes('result') || name.includes('output')) return faker.word.words({ count: { min: 1, max: 3 } });
-    if (name.includes('direction') || name.includes('position') || name.includes('mode')) return faker.helpers.arrayElement(['left', 'right', 'center', 'top', 'bottom', 'auto']);
-    // Generic fallback: short descriptive phrase
-    return faker.word.words({ count: { min: 1, max: 3 } });
+    return faker.lorem.words(2);
   }
 
-  /**
-   * Capitalize first letter of a string.
-   */
-  private capitalizeFirst(str: string): string {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  }
-
-  /**
-   * Generate a date value based on field name heuristics.
-   */
-  private generateDateValue(field: FieldSchema): Date {
-    const name = field.name.toLowerCase();
-
-    if (name.includes('created') || name.includes('start') || name.includes('birth')) {
-      return faker.date.past({ years: 2 });
-    }
-    if (name.includes('updated') || name.includes('modified')) {
-      return faker.date.recent({ days: 30 });
-    }
-    if (name.includes('deadline') || name.includes('due') || name.includes('end') || name.includes('expires')) {
-      return faker.date.future({ years: 1 });
-    }
-
+  private generateDateValue(_field: FieldSchema): Date {
     return faker.date.anytime();
   }
 
