@@ -1,6 +1,6 @@
 {
   "name": "@almadar/server",
-  "version": "2.7.2",
+  "version": "2.7.3",
   "description": "Shared server infrastructure for Almadar applications",
   "type": "module",
   "main": "./dist/index.js",
@@ -59,7 +59,7 @@
   },
   "peerDependencies": {
     "@almadar-io/agent": ">=5.5.6",
-    "express": "^4.0.0"
+    "express": "^5.0.0"
   },
   "peerDependenciesMeta": {
     "@almadar-io/agent": {
@@ -75,7 +75,7 @@
     "@types/ws": "^8.5.0",
     "@typescript-eslint/parser": "8.56.0",
     "eslint": "10.0.0",
-    "express": "^4.21.0",
+    "express": "^5.0.0",
     "firebase-admin": "^12.0.0",
     "supertest": "^6.3.0",
     "tsup": "^8.0.0",
