@@ -204,9 +204,36 @@ export class MockDataService {
     }
   }
 
-  private generateStringValue(_entityName: string, field: FieldSchema, _index: number): string {
+  private generateStringValue(entityName: string, field: FieldSchema, _index: number): string {
     if (field.enumValues && field.enumValues.length > 0) {
       return faker.helpers.arrayElement(field.enumValues);
+    }
+    // Image-bearing string fields → free Picsum stock photo. Same fallback
+    // taxonomy as @almadar/runtime's MockPersistenceAdapter so server-mode
+    // and runtime-mode produce visually consistent seed data.
+    const lname = field.name.toLowerCase();
+    if (
+      lname === 'image' ||
+      lname === 'imageurl' ||
+      lname === 'image_url' ||
+      lname === 'photo' ||
+      lname === 'photourl' ||
+      lname === 'photo_url' ||
+      lname === 'avatar' ||
+      lname === 'avatarurl' ||
+      lname === 'avatar_url' ||
+      lname === 'thumbnail' ||
+      lname === 'thumbnailurl' ||
+      lname === 'thumbnail_url' ||
+      lname === 'picture' ||
+      lname === 'pictureurl' ||
+      lname === 'cover' ||
+      lname === 'coverurl' ||
+      lname === 'banner' ||
+      lname === 'bannerurl'
+    ) {
+      const seed = `${entityName}-${field.name}-${faker.number.int({ min: 0, max: 1000 })}`;
+      return `https://picsum.photos/seed/${encodeURIComponent(seed)}/400/400`;
     }
     return faker.lorem.words(2);
   }
