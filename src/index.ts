@@ -116,6 +116,9 @@ export {
   ChangeSetStore,
   ValidationStore,
   SchemaProtectionService,
+  getRuntimeEntity,
+  clearRuntimeEntity,
+  resetRuntimeEntityStore,
 } from './stores/index.js';
 
 // Utils exports
