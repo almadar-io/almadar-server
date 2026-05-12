@@ -11,7 +11,7 @@ import type { StoreContract, StoreFilter, EntityRow, FieldValue } from '@almadar
 import { db } from '../lib/db.js';
 import { env } from '../lib/env.js';
 import { logger } from '../lib/logger.js';
-import { createLogger } from '../almadarLogger.js';
+import { createLogger } from '@almadar/logger';
 import { getMockDataService, type FieldSchema } from './MockDataService.js';
 
 const dataLog = createLogger('almadar:server:data');

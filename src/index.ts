@@ -18,7 +18,7 @@ export { logger } from './lib/logger.js';
 // Generated server handlers use this for the persist/emit hot path so the
 // `[almadar:server:effects]` lines show up in the verifier's `[almadar:*]`
 // stdout filter (orbital-verify-unified server-lifecycle.ts).
-export { createLogger, type Logger, type LogData } from './almadarLogger.js';
+export { createLogger, type Logger, type LogData } from '@almadar/logger';
 export { EventBus, getServerEventBus, resetServerEventBus, emitEntityEvent, type EventLogEntry } from './lib/eventBus.js';
 export {
   DistributedEventBus,

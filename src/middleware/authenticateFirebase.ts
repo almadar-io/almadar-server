@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import type { DecodedIdToken } from 'firebase-admin/auth';
 import { getAuth } from '../lib/db.js';
 import { env } from '../lib/env.js';
-import { createLogger } from '../almadarLogger.js';
+import { createLogger } from '@almadar/logger';
 
 const authLog = createLogger('almadar:server:auth');
 

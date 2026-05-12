@@ -76,7 +76,9 @@ export function setupEventBroadcast(server: Server, path: string = '/ws/events')
           });
         }
       } catch (error) {
-        logger.error(`[WebSocket] Failed to parse message:`, error);
+        logger.error(`[WebSocket] Failed to parse message:`, {
+          error: error instanceof Error ? error : String(error),
+        });
       }
     });
 
@@ -85,7 +87,7 @@ export function setupEventBroadcast(server: Server, path: string = '/ws/events')
     });
 
     ws.on('error', (error: Error) => {
-      logger.error(`[WebSocket] Client error:`, error);
+      logger.error(`[WebSocket] Client error:`, { error });
     });
   });
 
