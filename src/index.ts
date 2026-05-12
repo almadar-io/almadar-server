@@ -10,6 +10,7 @@
  *
  * @packageDocumentation
  */
+import type { SessionManager, SkillAgentResult } from '@almadar-io/agent';
 
 // Lib exports
 export { env } from './lib/env.js';
@@ -141,18 +142,28 @@ export async function resetMemoryManager() {
   const m = await import('./deepagent/memory.js');
   return m.resetMemoryManager();
 }
-export async function getSessionManager(...args: unknown[]) {
+export async function getSessionManager(): Promise<SessionManager> {
   const m = await import('./deepagent/session.js');
-  return m.getSessionManager(...args as []);
+  return m.getSessionManager();
 }
 export async function resetSessionManager() {
   const m = await import('./deepagent/session.js');
   return m.resetSessionManager();
 }
-export async function createServerSkillAgent(options: Parameters<Awaited<typeof import('./deepagent/skill-agent.js')>['createServerSkillAgent']>[0]): Promise<unknown> {
+export type { SessionManager, SessionMetadata, SessionRecord } from '@almadar-io/agent';
+export async function createServerSkillAgent(
+  options: Parameters<Awaited<typeof import('./deepagent/skill-agent.js')>['createServerSkillAgent']>[0],
+): Promise<SkillAgentResult> {
   const m = await import('./deepagent/skill-agent.js');
   return m.createServerSkillAgent(options);
 }
+export type {
+  SkillAgent,
+  SkillAgentResult,
+  SkillAgentStreamConfig,
+  SkillAgentStreamInput,
+  SkillAgentStreamChunk,
+} from '@almadar-io/agent';
 
 // Multi-user middleware (requires @almadar-io/agent)
 export async function multiUserMiddleware(req: unknown, res: unknown, next: unknown) {

@@ -51,8 +51,37 @@ declare module '@almadar-io/agent' {
     [key: string]: unknown;
   }
 
+  /** Persistence mode shipped by @almadar-io/agent's SessionManager. */
+  export type PersistenceMode = 'memory' | 'firestore';
+
+  /** Per-thread session metadata persisted by the SessionManager. */
+  export interface SessionMetadata {
+    skill: string;
+    workDir: string;
+    createdAt: number;
+    lastActivityAt: number;
+    approveAll?: boolean;
+  }
+
+  /** Session metadata + its thread ID, returned when listing. */
+  export interface SessionRecord extends SessionMetadata {
+    threadId: string;
+  }
+
+  /**
+   * Public surface of @almadar-io/agent's SessionManager. Methods mirror
+   * the real class exactly so consumers can call them without `as any`
+   * or local shadow types.
+   */
   export class SessionManager {
     constructor(config: SessionManagerConfig);
+    getMode(): PersistenceMode;
+    store(threadId: string, metadata: SessionMetadata): void;
+    get(threadId: string): SessionMetadata | undefined;
+    getAsync(threadId: string): Promise<SessionMetadata | undefined>;
+    clear(threadId: string): boolean;
+    list(): SessionRecord[];
+    listAsync(): Promise<SessionRecord[]>;
   }
   export interface FirestoreDb {
     collection(name: string): unknown;
@@ -70,10 +99,43 @@ declare module '@almadar-io/agent' {
     [key: string]: unknown;
   }
 
+  /** Configuration accepted by `SkillAgent.stream`. */
+  export interface SkillAgentStreamConfig {
+    configurable: { thread_id: string };
+    /**
+     * langgraph recursion-depth ceiling per run. Forwarded to the
+     * underlying graph; defaults to 25 when omitted.
+     */
+    recursionLimit?: number;
+  }
+
+  /** Input message shape for `SkillAgent.stream`. */
+  export interface SkillAgentStreamInput {
+    messages: Array<{ role: string; content: string }>;
+  }
+
+  /** One emission from `SkillAgent.stream`'s async iterator. */
+  export interface SkillAgentStreamChunk {
+    events?: Array<{ type: string; [key: string]: unknown }>;
+    model_request?: {
+      messages?: Array<{ kwargs?: { content?: Array<{ type: string }> } }>;
+    };
+  }
+
+  /** Runtime agent instance returned alongside SkillAgentResult.agent. */
+  export interface SkillAgent {
+    stream(
+      input: SkillAgentStreamInput,
+      config: SkillAgentStreamConfig,
+    ): Promise<AsyncIterable<SkillAgentStreamChunk>>;
+  }
+
   /** Result from a skill agent execution. */
   interface SkillAgentResult {
-    success?: boolean;
-    output?: string;
+    agent: SkillAgent;
+    threadId: string;
+    skill?: unknown;
+    workDir?: string;
     [key: string]: unknown;
   }
 
@@ -146,5 +208,5 @@ declare module '@almadar-io/agent' {
 
   export function createUserContext(userId: string, opts: UserContextOpts): UserContext;
   export function createWorkflowToolWrapper(config: WorkflowToolConfig): { wrap: (fn: unknown) => unknown };
-  export type { SkillAgentOptions, SkillAgentResult };
+  export type { SkillAgentOptions, SkillAgentResult, SkillAgent, SkillAgentStreamConfig, SkillAgentStreamInput, SkillAgentStreamChunk };
 }

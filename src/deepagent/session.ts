@@ -6,20 +6,21 @@
  * @packageDocumentation
  */
 
+import type { SessionManager } from '@almadar-io/agent';
 import { db } from '../lib/db.js';
 import { getMemoryManager } from './memory.js';
 
-let sessionManager: unknown = null;
+let sessionManager: SessionManager | null = null;
 
 /**
  * Get or create the SessionManager singleton
  */
-export async function getSessionManager() {
+export async function getSessionManager(): Promise<SessionManager> {
   if (!sessionManager) {
-    const { SessionManager } = await import('@almadar-io/agent');
+    const { SessionManager: SessionManagerCtor } = await import('@almadar-io/agent');
     const firestoreDb: import('@almadar-io/agent').FirestoreDb = { collection: (name: string) => db.collection(name) };
     const memoryManager = await getMemoryManager() as import('@almadar-io/agent').MemoryManager;
-    sessionManager = new SessionManager({
+    sessionManager = new SessionManagerCtor({
       mode: 'firestore',
       firestoreDb,
       memoryManager, // Enable GAP-002D
