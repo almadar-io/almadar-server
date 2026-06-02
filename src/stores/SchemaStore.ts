@@ -5,7 +5,7 @@
  * and Firestore serialization.
  */
 
-import type { OrbitalSchema, StatsView, AppSummary, SaveOptions, SaveResult } from '@almadar/core';
+import type { OrbitalSchema, StatsView, AppSummary, SaveOptions, SaveResult, DomainContext } from '@almadar/core';
 import { getFirestore } from '../lib/db.js';
 import { toFirestoreFormat, fromFirestoreFormat, type FirestoreSchemaDoc } from './firestoreFormat.js';
 import { SchemaProtectionService } from './SchemaProtectionService.js';
@@ -215,7 +215,7 @@ export class SchemaStore {
           updatedAt: metadata?.updatedAt || Date.now(),
           createdAt: metadata?.createdAt || Date.now(),
           stats: { entities: orbitalCount ?? 0, pages: 0, states: 0, events: 0, transitions: 0 },
-          domainContext: data.domainContext as string | undefined,
+          domainContext: data.domainContext as DomainContext | undefined,
           hasValidationErrors: false,
         };
       });
