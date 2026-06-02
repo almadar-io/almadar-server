@@ -15,6 +15,16 @@ async function getObservabilityCollector() {
 
 const router: ReturnType<typeof Router> = Router();
 
+// Defense-in-depth: these endpoints expose telemetry/metrics/session data, so they
+// require an authenticated principal regardless of how the router is mounted.
+router.use((req, res, next) => {
+  if (!req.firebaseUser) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  next();
+});
+
 /**
  * GET /metrics - Get performance snapshot
  */

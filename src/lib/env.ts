@@ -5,7 +5,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('production'),
+  // Auth dev-bypass is OFF unless explicitly opted in. Never key the bypass on
+  // NODE_ENV — an unset/misconfigured env must fail closed.
+  ALLOW_DEV_AUTH_BYPASS: z.enum(['true', 'false']).default('false'),
   PORT: z
     .string()
     .default('3030')

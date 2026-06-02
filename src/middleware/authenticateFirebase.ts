@@ -8,7 +8,7 @@ const authLog = createLogger('almadar:server:auth');
 
 const BEARER_PREFIX = 'Bearer ';
 
-/** Fake dev user injected when NODE_ENV=development and no auth header is present */
+/** Fake dev user injected ONLY when ALLOW_DEV_AUTH_BYPASS=true and no auth header is present */
 const DEV_USER: DecodedIdToken = {
   uid: 'dev-user-001',
   email: 'dev@localhost',
@@ -28,8 +28,8 @@ const DEV_USER: DecodedIdToken = {
 export async function authenticateFirebase(req: Request, res: Response, next: NextFunction) {
   const authorization = req.headers.authorization;
 
-  // Dev bypass: in development mode, skip auth if no token is provided
-  if (env.NODE_ENV === 'development' && (!authorization || !authorization.startsWith(BEARER_PREFIX))) {
+  // Dev bypass: ONLY when explicitly opted in via ALLOW_DEV_AUTH_BYPASS (never keyed on NODE_ENV — fail closed by default)
+  if (env.ALLOW_DEV_AUTH_BYPASS === 'true' && (!authorization || !authorization.startsWith(BEARER_PREFIX))) {
     authLog.debug('auth:devBypass', { uid: DEV_USER.uid });
     req.firebaseUser = DEV_USER;
     res.locals.firebaseUser = DEV_USER;
