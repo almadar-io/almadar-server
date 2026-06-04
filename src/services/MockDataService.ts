@@ -18,7 +18,7 @@ import { logger } from '../lib/logger.js';
 
 export interface FieldSchema {
   name: string;
-  type: 'string' | 'number' | 'boolean' | 'date' | 'enum' | 'relation' | 'array';
+  type: 'string' | 'number' | 'boolean' | 'date' | 'datetime' | 'enum' | 'relation' | 'array' | 'object';
   required?: boolean;
   enumValues?: string[];
   min?: number;
@@ -176,6 +176,7 @@ export class MockDataService {
         return faker.datatype.boolean();
 
       case 'date':
+      case 'datetime':
         return this.generateDateValue(field);
 
       case 'enum':
@@ -198,6 +199,10 @@ export class MockDataService {
       case 'array':
         // Generate an empty array for now
         return [];
+
+      case 'object':
+        // JSON/Struct-typed fields seed as an empty object placeholder.
+        return {};
 
       default:
         return null;
