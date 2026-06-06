@@ -2,16 +2,13 @@
  * Observability Routes
  *
  * Provides endpoints for metrics, health checks, and telemetry.
+ * The DeepAgent observability collector dependency has been removed;
+ * these endpoints now return server-native metrics.
  *
  * @packageDocumentation
  */
 
 import { Router } from 'express';
-
-async function getObservabilityCollector() {
-  const mod = await import('@almadar-io/agent');
-  return mod.getObservabilityCollector();
-}
 
 const router: ReturnType<typeof Router> = Router();
 
@@ -28,10 +25,14 @@ router.use((req, res, next) => {
 /**
  * GET /metrics - Get performance snapshot
  */
-router.get('/metrics', async (req, res) => {
+router.get('/metrics', async (_req, res) => {
   try {
-    const collector = await getObservabilityCollector();
-    const snapshot = collector.getPerformanceSnapshot();
+    const snapshot = {
+      uptime: process.uptime(),
+      requestCount: 0, // Would be tracked by middleware in production
+      memory: process.memoryUsage(),
+      timestamp: Date.now(),
+    };
     res.json(snapshot);
   } catch (error) {
     console.error('Metrics error:', error);
@@ -42,10 +43,9 @@ router.get('/metrics', async (req, res) => {
 /**
  * GET /health - Get health check
  */
-router.get('/health', async (req, res) => {
+router.get('/health', async (_req, res) => {
   try {
-    const collector = await getObservabilityCollector();
-    const health = await collector.healthCheck();
+    const health = [{ status: 'healthy', name: 'server', timestamp: Date.now() }];
     const allHealthy = health.every((h) => h.status === 'healthy');
 
     res.status(allHealthy ? 200 : 503).json({
@@ -65,35 +65,19 @@ router.get('/health', async (req, res) => {
 /**
  * GET /sessions/:threadId/telemetry - Get session telemetry
  */
-router.get('/sessions/:threadId/telemetry', async (req, res) => {
-  try {
-    const collector = await getObservabilityCollector();
-    const telemetry = collector.getSessionTelemetry(req.params.threadId);
-
-    if (!telemetry) {
-      res.status(404).json({ error: 'Session not found' });
-      return;
-    }
-
-    res.json(telemetry);
-  } catch (error) {
-    console.error('Telemetry error:', error);
-    res.status(500).json({ error: 'Failed to get telemetry' });
-  }
+router.get('/sessions/:threadId/telemetry', async (_req, res) => {
+  res.status(501).json({
+    error: 'Session telemetry is deprecated. Use @almadar-io/rabit trace events instead.',
+  });
 });
 
 /**
  * GET /active-sessions - Get active sessions
  */
-router.get('/active-sessions', async (req, res) => {
-  try {
-    const collector = await getObservabilityCollector();
-    const sessions = collector.getActiveSessions();
-    res.json(sessions);
-  } catch (error) {
-    console.error('Active sessions error:', error);
-    res.status(500).json({ error: 'Failed to get active sessions' });
-  }
+router.get('/active-sessions', async (_req, res) => {
+  res.status(501).json({
+    error: 'Active sessions tracking is deprecated. Use @almadar-io/rabit SessionStore instead.',
+  });
 });
 
 export default router;

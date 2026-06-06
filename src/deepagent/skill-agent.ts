@@ -1,89 +1,36 @@
 /**
- * Skill Agent Factory
+ * Skill Agent Factory (Rabit Compatibility Layer)
  *
- * Creates DeepAgent instances with full GAP feature integration.
+ * The DeepAgent `createSkillAgent` API is deprecated. This module now
+ * provides stubbed legacy wrappers that redirect to `@almadar-io/rabit`.
+ *
+ * All rabit imports are lazy so the package loads even when rabit is
+ * not installed (optional peer dependency).
  *
  * @packageDocumentation
  */
 
-import type { SkillAgentResult } from '@almadar-io/agent';
-import { getMemoryManager } from './memory.js';
-import { getSessionManager } from './session.js';
+import type { RabitResult, RabitOptions } from '@almadar-io/rabit';
 
-async function loadAgent() {
-  return import('@almadar-io/agent');
-}
+export type { RabitResult as SkillAgentResult, RabitOptions as SkillAgentOptions } from '@almadar-io/rabit';
 
-interface ServerSkillAgentOptions {
-  userId: string;
-  appId?: string;
-  threadId?: string;
-  skill?: string;
-  [key: string]: unknown;
-}
+// Re-export session/memory stubs for backward compatibility during transition
+export { getSessionStore, resetSessionStore } from './session.js';
+export { getOrbitalMemory, resetOrbitalMemory } from './memory.js';
 
 /**
- * Create a skill agent with full server-side GAP integration
+ * @deprecated Use `runRabit({ prompt, workDir, provider, model })` from
+ * `@almadar-io/rabit` directly.
  */
 export async function createServerSkillAgent(
-  options: ServerSkillAgentOptions,
-): Promise<SkillAgentResult> {
-  const agent = await loadAgent();
-  const memoryManager = await getMemoryManager();
-  const sessionManager = await getSessionManager();
-  const observability = agent.getObservabilityCollector();
-  const multiUser = agent.getMultiUserManager();
-
-  // Check access if resuming existing session
-  if (options.threadId) {
-    const access = multiUser.canAccessSession(options.threadId, {
-      userId: options.userId,
-      roles: ['user'],
-    });
-    if (!access.allowed) {
-      throw new Error(`Access denied: ${access.reason}`);
-    }
-  }
-
-  // Start observability
-  observability.startSession(options.threadId ?? 'new', options.userId);
-
-  // Create workflow tool wrapper for retry/telemetry (always enabled)
-  const workflowToolWrapper = agent.createWorkflowToolWrapper({
-    maxRetries: 2,
-    enableTelemetry: true,
-    timeoutMs: 300000, // 5 minutes
-  });
-
-  try {
-    const result = await agent.createSkillAgent({
-      ...options,
-      memoryManager, // GAP-001: Enable memory
-      userId: options.userId, // GAP-002D: Session → Memory sync
-      appId: options.appId,
-      toolWrapper: workflowToolWrapper.wrap, // Always use workflow wrapper for reliability
-    });
-
-    // Assign ownership for new sessions
-    const threadId = result.threadId as string | undefined;
-    if (threadId) {
-      multiUser.assignSessionOwnership(threadId, options.userId);
-    }
-
-    // Record successful creation
-    observability.recordEvent({
-      type: 'session_start',
-      sessionId: result.threadId,
-      userId: options.userId,
-      payload: { skill: options.skill },
-    });
-
-    return result;
-  } catch (error) {
-    observability.recordError(options.threadId ?? 'new', error as Error);
-    throw error;
-  }
+  options: { userId: string; appId?: string; threadId?: string; skill?: string } & Record<string, unknown>,
+): Promise<RabitResult> {
+  const rabit = await import('@almadar-io/rabit');
+  return rabit.runRabit({
+    prompt: options.skill ?? 'Build an application',
+    workDir: process.cwd(),
+    provider: 'anthropic',
+    model: 'claude-sonnet-4-20250514',
+    ...options,
+  } as RabitOptions);
 }
-
-// Re-export for convenience
-export { getMemoryManager, getSessionManager };

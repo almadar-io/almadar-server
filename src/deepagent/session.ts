@@ -1,42 +1,39 @@
 /**
- * Session Manager Singleton
+ * Session Store (Rabit Compatibility Layer)
  *
- * Provides Firestore-backed session management with full GAP features.
+ * Replaces the old Firestore-backed `SessionManager` singleton with
+ * rabit's per-orbital `SessionStore` factory.
  *
  * @packageDocumentation
  */
 
-import type { SessionManager } from '@almadar-io/agent';
-import { db } from '../lib/db.js';
-import { getMemoryManager } from './memory.js';
-
-let sessionManager: SessionManager | null = null;
+let sessionStore: unknown = null;
 
 /**
- * Get or create the SessionManager singleton
+ * @deprecated Use `new SessionStore(workDir, workspace)` from `@almadar-io/rabit`.
  */
-export async function getSessionManager(): Promise<SessionManager> {
-  if (!sessionManager) {
-    const { SessionManager: SessionManagerCtor } = await import('@almadar-io/agent');
-    const firestoreDb: import('@almadar-io/agent').FirestoreDb = { collection: (name: string) => db.collection(name) };
-    const memoryManager = await getMemoryManager() as import('@almadar-io/agent').MemoryManager;
-    sessionManager = new SessionManagerCtor({
-      mode: 'firestore',
-      firestoreDb,
-      memoryManager, // Enable GAP-002D
-      compactionConfig: {
-        maxTokens: 150000,
-        keepRecentMessages: 10,
-        strategy: 'last',
-      },
-    });
+export async function getSessionStore(): Promise<unknown> {
+  if (!sessionStore) {
+    try {
+      const { SessionStore: SessionStoreCtor } = await import('@almadar-io/rabit');
+      // Rabit's SessionStore requires a WorkspaceService, not a Firestore db.
+      throw new Error(
+        'getSessionStore() is deprecated. ' +
+          'Construct `new SessionStore(workDir, workspace)` from `@almadar-io/rabit` directly.',
+      );
+    } catch (err) {
+      if ((err as Error).message.includes('Cannot find module') || (err as Error).message.includes('No matching export')) {
+        throw new Error('@almadar-io/rabit is not installed (optional peer dependency).');
+      }
+      throw err;
+    }
   }
-  return sessionManager;
+  return sessionStore;
 }
 
 /**
- * Reset the SessionManager (useful for testing)
+ * @deprecated Reset is a no-op without a real singleton.
  */
-export function resetSessionManager(): void {
-  sessionManager = null;
+export function resetSessionStore(): void {
+  sessionStore = null;
 }

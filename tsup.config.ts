@@ -15,5 +15,5 @@ export default defineConfig({
   sourcemap: true,
   splitting: false,
   treeshake: true,
-  external: ['express', 'firebase-admin', '@almadar-io/agent'],
+  external: ['express', 'firebase-admin', '@almadar-io/rabit'],
 });

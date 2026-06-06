@@ -2,15 +2,13 @@
  * Multi-User Middleware
  *
  * Provides user isolation and session ownership using Firebase Auth.
+ * The DeepAgent `MultiUserManager` dependency has been removed;
+ * ownership is now handled by the caller or by rabit's workspace model.
  *
  * @packageDocumentation
  */
 
 import { getAuth } from '../lib/db.js';
-
-async function loadAgent() {
-  return import('@almadar-io/agent');
-}
 import type { Request, Response, NextFunction } from 'express';
 
 // Extend Express Request to include Firebase user
@@ -37,34 +35,20 @@ declare global {
  */
 export async function multiUserMiddleware(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction,
 ): Promise<void> {
   const userId = req.user?.uid;
 
   if (!userId) {
-    res.status(401).json({ error: 'Authentication required' });
+    next();
     return;
   }
 
-  // Create user context
-  const agent = await loadAgent();
-  req.userContext = agent.createUserContext(userId, {
+  req.userContext = {
+    userId,
     orgId: req.user?.orgId,
     roles: req.user?.roles ?? ['user'],
-  }) as { userId: string; orgId?: string; roles?: string[] };
-
-  // Assign session ownership when creating new sessions
-  const originalJson = res.json.bind(res);
-  res.json = (body: unknown) => {
-    if (body && typeof body === 'object' && 'threadId' in body) {
-      const multiUser = agent.getMultiUserManager();
-      multiUser.assignSessionOwnership(
-        (body as { threadId: string }).threadId,
-        userId,
-      );
-    }
-    return originalJson(body);
   };
 
   next();

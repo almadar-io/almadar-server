@@ -1,39 +1,36 @@
 /**
- * Memory Manager Singleton
+ * Orbital Memory (Rabit Compatibility Layer)
  *
- * Provides Firestore-backed memory management for DeepAgent.
+ * The old DeepAgent `MemoryManager` has no equivalent in rabit.
+ * Rabit stores per-orbital memory as JSON files in the workspace.
  *
  * @packageDocumentation
  */
 
-import { db } from '../lib/db.js';
-
-let memoryManager: unknown = null;
+let orbitalMemory: unknown = null;
 
 /**
- * Get or create the MemoryManager singleton
+ * @deprecated Rabit does not provide a Firestore-backed MemoryManager.
  */
-export async function getMemoryManager() {
-  if (!memoryManager) {
-    const { MemoryManager } = await import('@almadar-io/agent');
-    memoryManager = new MemoryManager({
-      db,
-      usersCollection: 'agent_memory_users',
-      projectsCollection: 'agent_memory_projects',
-      generationsCollection: 'agent_memory_generations',
-      patternsCollection: 'agent_memory_patterns',
-      interruptsCollection: 'agent_memory_interrupts',
-      feedbackCollection: 'agent_memory_feedback',
-      checkpointsCollection: 'agent_memory_checkpoints',
-      toolPreferencesCollection: 'agent_memory_tool_preferences',
-    });
+export async function getOrbitalMemory(): Promise<unknown> {
+  if (!orbitalMemory) {
+    try {
+      await import('@almadar-io/rabit');
+    } catch {
+      throw new Error('@almadar-io/rabit is not installed (optional peer dependency).');
+    }
+    throw new Error(
+      'getOrbitalMemory() is deprecated. ' +
+        'Rabit stores memory per-orbital in the workspace. ' +
+        'Use SessionStore from `@almadar-io/rabit` to read/write memory.json.',
+    );
   }
-  return memoryManager;
+  return orbitalMemory;
 }
 
 /**
- * Reset the MemoryManager (useful for testing)
+ * @deprecated Reset is a no-op without a real singleton.
  */
-export function resetMemoryManager(): void {
-  memoryManager = null;
+export function resetOrbitalMemory(): void {
+  orbitalMemory = null;
 }

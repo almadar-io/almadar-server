@@ -2,15 +2,13 @@
  * State Sync WebSocket Handler
  *
  * Provides real-time state synchronization using Socket.IO.
+ * The DeepAgent state-sync manager has been removed; this is now a
+ * lightweight pass-through that broadcasts events within a user's room.
  *
  * @packageDocumentation
  */
 
 import { getAuth } from '../lib/db.js';
-
-async function loadAgent() {
-  return import('@almadar-io/agent');
-}
 
 // Type definitions for Socket.IO (to avoid dependency)
 interface Socket {
@@ -32,9 +30,6 @@ interface SocketServer {
  * Set up state sync WebSocket with Firebase Auth
  */
 export async function setupStateSyncWebSocket(io: SocketServer): Promise<void> {
-  const agent = await loadAgent();
-  const stateSync = agent.getStateSyncManager();
-
   // Firebase Auth middleware for Socket.IO
   io.use(async (socket, next) => {
     try {
@@ -65,34 +60,13 @@ export async function setupStateSyncWebSocket(io: SocketServer): Promise<void> {
 
     console.log(`[StateSync] Client ${clientId} connected for user ${userId}`);
 
-    // Update client ID in sync manager
-    stateSync.updateConfig({ clientId });
-
     // Join user's room for targeted updates
     socket.join(`user:${userId}`);
 
-    // Listen for state changes from client
+    // Listen for state changes from client and broadcast to other clients
     socket.on('stateChange', (...args: unknown[]) => {
       const event = args[0] as { threadId: string };
-      
-      // Verify ownership
-      const multiUser = agent.getMultiUserManager();
-      if (!multiUser.isSessionOwner(event.threadId, userId)) {
-        socket.emit('error', { message: 'Not session owner' });
-        return;
-      }
-
-      // Process through sync manager
-      stateSync.receiveRemoteChange({ ...event } as import('@almadar-io/agent').StateChangeEvent);
-
-      // Broadcast to other clients of same user
       socket.to(`user:${userId}`).emit('remoteChange', event);
-    });
-
-    // Handle sync required events from agent
-    stateSync.on('syncRequired', (...args: unknown[]) => {
-      const changes = args[0] as unknown[];
-      socket.emit('syncBatch', changes);
     });
 
     socket.on('disconnect', () => {

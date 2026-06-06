@@ -10,7 +10,6 @@
  *
  * @packageDocumentation
  */
-import type { SessionManager, SkillAgentResult } from '@almadar-io/agent';
 
 // Lib exports
 export { env } from './lib/env.js';
@@ -132,54 +131,32 @@ export {
   type PaginationParams,
 } from './utils/queryFilters.js';
 
-// DeepAgent exports (require @almadar-io/agent as optional peer dependency)
-// These are re-exported lazily — they throw at call time if agent is not installed.
-export async function getMemoryManager(...args: unknown[]) {
-  const m = await import('./deepagent/memory.js');
-  return m.getMemoryManager(...args as []);
-}
-export async function resetMemoryManager() {
-  const m = await import('./deepagent/memory.js');
-  return m.resetMemoryManager();
-}
-export async function getSessionManager(): Promise<SessionManager> {
-  const m = await import('./deepagent/session.js');
-  return m.getSessionManager();
-}
-export async function resetSessionManager() {
-  const m = await import('./deepagent/session.js');
-  return m.resetSessionManager();
-}
-export type { SessionManager, SessionMetadata, SessionRecord } from '@almadar-io/agent';
-export async function createServerSkillAgent(
-  options: Parameters<Awaited<typeof import('./deepagent/skill-agent.js')>['createServerSkillAgent']>[0],
-): Promise<SkillAgentResult> {
-  const m = await import('./deepagent/skill-agent.js');
-  return m.createServerSkillAgent(options);
-}
+// ─── Rabit compatibility exports (replaces old @almadar-io/agent surface) ────
+
+export {
+  getOrbitalMemory,
+  resetOrbitalMemory,
+} from './deepagent/memory.js';
+export {
+  getSessionStore,
+  resetSessionStore,
+} from './deepagent/session.js';
+export {
+  createServerSkillAgent,
+} from './deepagent/skill-agent.js';
 export type {
-  SkillAgent,
   SkillAgentResult,
-  SkillAgentStreamConfig,
-  SkillAgentStreamInput,
-  SkillAgentStreamChunk,
-} from '@almadar-io/agent';
+  SkillAgentOptions,
+} from './deepagent/skill-agent.js';
 
-// Multi-user middleware (requires @almadar-io/agent)
-export async function multiUserMiddleware(req: unknown, res: unknown, next: unknown) {
-  const m = await import('./middleware/multi-user.js');
-  return m.multiUserMiddleware(req as Parameters<typeof m.multiUserMiddleware>[0], res as Parameters<typeof m.multiUserMiddleware>[1], next as Parameters<typeof m.multiUserMiddleware>[2]);
-}
-export async function verifyFirebaseAuth(req: unknown, res: unknown, next: unknown) {
-  const m = await import('./middleware/multi-user.js');
-  return m.verifyFirebaseAuth(req as Parameters<typeof m.verifyFirebaseAuth>[0], res as Parameters<typeof m.verifyFirebaseAuth>[1], next as Parameters<typeof m.verifyFirebaseAuth>[2]);
-}
+export {
+  multiUserMiddleware,
+  verifyFirebaseAuth,
+} from './middleware/multi-user.js';
 
-// WebSocket state sync (requires @almadar-io/agent)
-export async function setupStateSyncWebSocket(io: unknown) {
-  const m = await import('./websocket/state-sync.js');
-  return m.setupStateSyncWebSocket(io as Parameters<typeof m.setupStateSyncWebSocket>[0]);
-}
+export {
+  setupStateSyncWebSocket,
+} from './websocket/state-sync.js';
 
 // Service Discovery exports
 export {
@@ -201,7 +178,7 @@ export type {
   ServerServiceContracts,
 } from './contracts.js';
 
-// Route exports (requires @almadar-io/agent)
+// Route exports
 export async function observabilityRouter(): Promise<import('express').Router> {
   const m = await import('./routes/observability.js');
   return m.default;
