@@ -1,4 +1,6 @@
 declare module '@almadar-io/rabit' {
+  import type { JsonObject, JsonValue } from '@almadar/core';
+
   // Re-export the canonical SSE event vocabulary so consumers of
   // @almadar/server can import SSEEvent without adding a direct
   // dependency on @almadar-io/rabit.
@@ -63,52 +65,60 @@ declare module '@almadar-io/rabit' {
     prompt: string;
     workDir: string;
     userId?: string;
-    workspace?: unknown;
+    workspace?: import('@almadar/workspace').WorkspaceService;
     provider: string;
     model: string;
     loloMode?: boolean;
     dryRun?: boolean;
-    preAnalysis?: unknown;
+    preAnalysis?: JsonValue;
     signal?: AbortSignal;
-    pauseController?: unknown;
-    callbacks?: unknown;
-    extraBehaviors?: unknown;
+    pauseController?: import('./runtime/pause-controller.js').PauseController;
+    callbacks?: import('./llm/turn.js').AgentTurnCallbacks;
+    extraBehaviors?: import('./schema/behaviors/extras.js').ExtraBehaviorDispatch;
   }
   export interface RabitResult {
-    schema: unknown;
-    orbitals: unknown[];
+    schema: JsonObject;
+    orbitals: JsonObject[];
     durationMs: number;
     tracePath: string;
   }
 
   // Session store
   export class SessionStore {
-    constructor(workDir: string, workspace: unknown);
+    constructor(workDir: string, workspace: import('@almadar/workspace').WorkspaceService);
   }
 
   // Trace
   export interface TraceEvent {
     type: string;
     timestamp: number;
-    [key: string]: unknown;
+    [key: string]: JsonValue;
   }
-  export function emitTraceEvent(workspace: unknown, event: TraceEvent): Promise<void>;
-  export function readTrace(workspace: unknown): TraceEvent[];
+  export function emitTraceEvent(
+    workspace: import('@almadar/workspace').WorkspaceService,
+    event: TraceEvent,
+  ): Promise<void>;
+  export function readTrace(workspace: import('@almadar/workspace').WorkspaceService): TraceEvent[];
 
   // Session + memory types
   export interface HistoryEntry {
     role: string;
     content: string;
     timestamp: number;
-    metadata?: unknown;
+    metadata?: JsonObject;
   }
   export interface OrbitalMemory {
-    [key: string]: unknown;
+    entityName?: string;
+    fields?: string[];
+    emits?: string[];
+    listens?: string[];
+    notes?: string[];
+    [key: string]: JsonValue | undefined;
   }
   export interface ChatMessage {
     role: string;
     content: string;
-    toolCalls?: unknown[];
+    toolCalls?: JsonObject[];
     toolCallId?: string;
     toolName?: string;
     reasoningContent?: string;

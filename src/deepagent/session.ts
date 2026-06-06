@@ -7,22 +7,25 @@
  * @packageDocumentation
  */
 
-let sessionStore: unknown = null;
+import type { SessionStore } from '@almadar-io/rabit';
+
+let sessionStore: SessionStore | null = null;
 
 /**
  * @deprecated Use `new SessionStore(workDir, workspace)` from `@almadar-io/rabit`.
  */
-export async function getSessionStore(): Promise<unknown> {
+export async function getSessionStore(): Promise<SessionStore> {
   if (!sessionStore) {
     try {
       const { SessionStore: SessionStoreCtor } = await import('@almadar-io/rabit');
-      // Rabit's SessionStore requires a WorkspaceService, not a Firestore db.
+      void SessionStoreCtor;
       throw new Error(
         'getSessionStore() is deprecated. ' +
           'Construct `new SessionStore(workDir, workspace)` from `@almadar-io/rabit` directly.',
       );
     } catch (err) {
-      if ((err as Error).message.includes('Cannot find module') || (err as Error).message.includes('No matching export')) {
+      const message = (err as Error).message;
+      if (message.includes('Cannot find module') || message.includes('No matching export')) {
         throw new Error('@almadar-io/rabit is not installed (optional peer dependency).');
       }
       throw err;

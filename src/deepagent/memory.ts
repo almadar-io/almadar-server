@@ -7,12 +7,14 @@
  * @packageDocumentation
  */
 
-let orbitalMemory: unknown = null;
+import type { OrbitalMemory } from '@almadar-io/rabit';
+
+let orbitalMemory: OrbitalMemory | null = null;
 
 /**
  * @deprecated Rabit does not provide a Firestore-backed MemoryManager.
  */
-export async function getOrbitalMemory(): Promise<unknown> {
+export async function getOrbitalMemory(): Promise<OrbitalMemory> {
   if (!orbitalMemory) {
     try {
       await import('@almadar-io/rabit');
