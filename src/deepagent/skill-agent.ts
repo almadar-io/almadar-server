@@ -23,7 +23,7 @@ export { getOrbitalMemory, resetOrbitalMemory } from './memory.js';
  * `@almadar-io/rabit` directly.
  */
 export async function createServerSkillAgent(
-  options: { userId: string; appId?: string; threadId?: string; skill?: string } & Record<string, unknown>,
+  options: { userId: string; appId?: string; threadId?: string; skill?: string } & Partial<RabitOptions>,
 ): Promise<RabitResult> {
   const rabit = await import('@almadar-io/rabit');
   return rabit.runRabit({

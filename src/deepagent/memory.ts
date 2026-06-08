@@ -16,11 +16,8 @@ let orbitalMemory: OrbitalMemory | null = null;
  */
 export async function getOrbitalMemory(): Promise<OrbitalMemory> {
   if (!orbitalMemory) {
-    try {
-      await import('@almadar-io/rabit');
-    } catch {
-      throw new Error('@almadar-io/rabit is not installed (optional peer dependency).');
-    }
+    // Pure deprecation stub: always throw the migration message (regardless of
+    // whether the optional `@almadar-io/rabit` peer is installed).
     throw new Error(
       'getOrbitalMemory() is deprecated. ' +
         'Rabit stores memory per-orbital in the workspace. ' +

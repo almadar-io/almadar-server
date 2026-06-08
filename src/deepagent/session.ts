@@ -16,20 +16,12 @@ let sessionStore: SessionStore | null = null;
  */
 export async function getSessionStore(): Promise<SessionStore> {
   if (!sessionStore) {
-    try {
-      const { SessionStore: SessionStoreCtor } = await import('@almadar-io/rabit');
-      void SessionStoreCtor;
-      throw new Error(
-        'getSessionStore() is deprecated. ' +
-          'Construct `new SessionStore(workDir, workspace)` from `@almadar-io/rabit` directly.',
-      );
-    } catch (err) {
-      const message = (err as Error).message;
-      if (message.includes('Cannot find module') || message.includes('No matching export')) {
-        throw new Error('@almadar-io/rabit is not installed (optional peer dependency).');
-      }
-      throw err;
-    }
+    // Pure deprecation stub: always throw the migration message (regardless of
+    // whether the optional `@almadar-io/rabit` peer is installed).
+    throw new Error(
+      'getSessionStore() is deprecated. ' +
+        'Construct `new SessionStore(workDir, workspace)` from `@almadar-io/rabit` directly.',
+    );
   }
   return sessionStore;
 }
