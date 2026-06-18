@@ -45,6 +45,14 @@ export {
   closeWebSocketServer,
   getConnectedClientCount,
 } from './lib/websocket.js';
+export {
+  setupSSE,
+  sendSSEEvent,
+  formatSSEEvent,
+  sendSSEDone,
+  closeSSE,
+  type SSEEvent,
+} from './lib/sse.js';
 
 // Middleware exports
 export {

@@ -8,3 +8,11 @@ export {
   closeWebSocketServer,
   getConnectedClientCount,
 } from './websocket.js';
+export {
+  setupSSE,
+  sendSSEEvent,
+  formatSSEEvent,
+  sendSSEDone,
+  closeSSE,
+  type SSEEvent,
+} from './sse.js';
