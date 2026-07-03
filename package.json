@@ -1,6 +1,6 @@
 {
   "name": "@almadar/server",
-  "version": "2.16.0",
+  "version": "2.17.0",
   "description": "Shared server infrastructure for Almadar applications",
   "type": "module",
   "main": "./dist/index.js",
@@ -81,7 +81,8 @@
     "supertest": "^6.3.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
-    "vitest": "^2.1.0"
+    "vitest": "^2.1.0",
+    "turbo": "^2.8.17"
   },
   "repository": {
     "type": "git",
@@ -95,5 +96,6 @@
     "express",
     "middleware"
   ],
-  "homepage": "https://github.com/almadar-io/almadar#readme"
+  "homepage": "https://github.com/almadar-io/almadar#readme",
+  "packageManager": "pnpm@10.30.3"
 }
