@@ -86,6 +86,12 @@ export {
   type PaginationOptions,
   type PaginatedResult,
 } from './services/DataService.js';
+export {
+  getSubstrateService,
+  setSubstrateService,
+  resetSubstrateService,
+  type SubstrateService,
+} from './services/substrate.js';
 
 // Compat re-exports — generated project code imports these constant names.
 // They are now lazy getters; usage like `dataService.getById(...)` works

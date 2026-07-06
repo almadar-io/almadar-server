@@ -6,3 +6,4 @@
 
 export { MockDataService, getMockDataService, resetMockDataService, type FieldSchema, type EntitySchema } from './MockDataService.js';
 export { getDataService, resetDataService, seedMockData, type DataService, type EntitySeedConfig } from './DataService.js';
+export { getSubstrateService, setSubstrateService, resetSubstrateService, type SubstrateService } from './substrate.js';
