@@ -15,7 +15,6 @@
 import type {
     Orbital,
     OrbitalSchema,
-    JsonValue,
     AgentMemoryRecord,
     SessionHistoryEntry,
     ServiceCallResult,
@@ -24,6 +23,13 @@ import type {
     ComposeAllResult,
     ComposeChildrenResult,
     LoloEmitResult,
+    AnalysisResult,
+    PlanSnapshot,
+    ComposeOptions,
+    GitHubRepo,
+    GitHubIssue,
+    TraitConfig,
+    JsonValue,
 } from '@almadar/core';
 
 export interface SubstrateService {
@@ -35,7 +41,7 @@ export interface SubstrateService {
         writeMemory(memory: AgentMemoryRecord[]): Promise<void>;
         readErrors(): Promise<string[]>;
         writeErrors(errors: string[]): Promise<void>;
-        readAnalysis(): Promise<JsonValue>;
+        readAnalysis(): Promise<AnalysisResult>;
     };
     workspace: {
         readOrbital(name: string): Promise<Orbital>;
@@ -46,26 +52,26 @@ export interface SubstrateService {
         listOrbitals(): Promise<string[]>;
         readSchema(name: string): Promise<OrbitalSchema>;
         writeSchema(name: string, schema: OrbitalSchema): Promise<void>;
-        readPlan(): Promise<JsonValue>;
-        writePlan(plan: JsonValue): Promise<void>;
+        readPlan(): Promise<PlanSnapshot>;
+        writePlan(plan: PlanSnapshot): Promise<void>;
         archiveOrbital(name: string): Promise<void>;
     };
     behavior: {
-        instantiate(behavior: string, config?: JsonValue): Promise<BuilderResult>;
-        call(ref: string, method: string, args?: JsonValue): Promise<ServiceCallResult>;
+        instantiate(behavior: string, config?: TraitConfig): Promise<BuilderResult>;
+        call(ref: string, method: string, args?: TraitConfig): Promise<ServiceCallResult>;
         emitBody(orbitalName: string): Promise<LoloEmitResult>;
     };
     compose: {
-        composeAll(spec: JsonValue): Promise<ComposeAllResult>;
-        composeChildren(spec: JsonValue): Promise<ComposeChildrenResult>;
+        composeAll(options: ComposeOptions): Promise<ComposeAllResult>;
+        composeChildren(options: ComposeOptions): Promise<ComposeChildrenResult>;
     };
     validate: {
         validate(name: string): Promise<ValidateResult>;
     };
     integration: {
-        http(url: string, opts?: JsonValue): Promise<JsonValue>;
-        githubGetRepo(owner: string, repo: string): Promise<JsonValue>;
-        githubCreateIssue(owner: string, repo: string, issue: JsonValue): Promise<JsonValue>;
+        http(url: string, opts?: { method?: string; body?: JsonValue; headers?: Record<string, string> }): Promise<JsonValue>;
+        githubGetRepo(owner: string, repo: string): Promise<GitHubRepo>;
+        githubCreateIssue(owner: string, repo: string, title: string, body?: string): Promise<GitHubIssue>;
     };
     invoke(operator: string, args: JsonValue[]): Promise<ServiceCallResult>;
 }
