@@ -1,6 +1,6 @@
 {
   "name": "@almadar/server",
-  "version": "2.22.0",
+  "version": "2.23.0",
   "description": "Shared server infrastructure for Almadar applications",
   "type": "module",
   "main": "./dist/index.js",
@@ -48,7 +48,7 @@
     "prepare": "git config core.hooksPath .githooks"
   },
   "dependencies": {
-    "@almadar/core": "^10.26.0",
+    "@almadar/core": "^10.27.0",
     "@almadar/logger": "^1.9.0",
     "@faker-js/faker": "^9.3.0",
     "cors": "^2.8.5",
