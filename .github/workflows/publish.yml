@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: 22
 
-      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm install --frozen-lockfile
         env:
           npm_config_auto_install_peers: false
           npm_config_strict_peer_dependencies: false
