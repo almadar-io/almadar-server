@@ -76,7 +76,7 @@ export class EventBus {
     };
 
     if (this.debug) {
-      busLog.info(`Emitting ${event}`, { payload });
+      busLog.debug(`Emitting ${event}`, { payload });
     }
 
     const handlers = this.handlers.get(event);

@@ -206,7 +206,7 @@ class MockDataServiceAdapter implements DataService {
 
   async create<T extends BaseEntity>(collection: string, data: Partial<T>): Promise<T> {
     const result = getMockDataService().create<T>(collection, data);
-    dataLog.info('create', { entity: collection, id: result.id });
+    dataLog.debug('create', { entity: collection, id: result.id });
     return result;
   }
 
@@ -216,13 +216,13 @@ class MockDataServiceAdapter implements DataService {
     data: Partial<T>
   ): Promise<T | null> {
     const result = getMockDataService().update<T>(collection, id, data);
-    dataLog.info('update', { entity: collection, id, found: result !== null });
+    dataLog.debug('update', { entity: collection, id, found: result !== null });
     return result;
   }
 
   async delete(collection: string, id: string): Promise<boolean> {
     const result = getMockDataService().delete(collection, id);
-    dataLog.info('delete', { entity: collection, id, success: result });
+    dataLog.debug('delete', { entity: collection, id, success: result });
     return result;
   }
 
@@ -365,7 +365,7 @@ class FirebaseDataService implements DataService {
       updatedAt: now,
     });
 
-    dataLog.info('create', { entity: collection, id: docRef.id });
+    dataLog.debug('create', { entity: collection, id: docRef.id });
     return {
       ...data,
       id: docRef.id,
@@ -392,7 +392,7 @@ class FirebaseDataService implements DataService {
       updatedAt: now,
     });
 
-    dataLog.info('update', { entity: collection, id });
+    dataLog.debug('update', { entity: collection, id });
     return {
       ...doc.data(),
       ...data,
@@ -411,7 +411,7 @@ class FirebaseDataService implements DataService {
     }
 
     await docRef.delete();
-    dataLog.info('delete', { entity: collection, id, success: true });
+    dataLog.debug('delete', { entity: collection, id, success: true });
     return true;
   }
 

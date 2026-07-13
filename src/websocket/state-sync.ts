@@ -61,7 +61,7 @@ export async function setupStateSyncWebSocket(io: SocketServer): Promise<void> {
     const userId = socket.data.user.uid;
     const clientId = socket.handshake.auth.clientId;
 
-    syncLog.info('Client connected', { clientId, userId });
+    syncLog.debug('Client connected', { clientId, userId });
 
     // Join user's room for targeted updates
     socket.join(`user:${userId}`);
@@ -73,7 +73,7 @@ export async function setupStateSyncWebSocket(io: SocketServer): Promise<void> {
     });
 
     socket.on('disconnect', () => {
-      syncLog.info('Client disconnected', { clientId });
+      syncLog.debug('Client disconnected', { clientId });
       socket.leave(`user:${userId}`);
     });
   });

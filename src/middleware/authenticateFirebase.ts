@@ -44,7 +44,7 @@ export async function authenticateFirebase(req: Request, res: Response, next: Ne
     const token = authorization.slice(BEARER_PREFIX.length);
     const decodedToken = await getAuth().verifyIdToken(token);
 
-    authLog.info('auth:verified', { uid: decodedToken.uid, email: decodedToken.email });
+    authLog.debug('auth:verified', { uid: decodedToken.uid, email: decodedToken.email });
     req.firebaseUser = decodedToken;
     res.locals.firebaseUser = decodedToken;
 
