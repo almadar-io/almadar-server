@@ -8,9 +8,11 @@
  * @packageDocumentation
  */
 
+import { createLogger } from '@almadar/logger';
 import { Router } from 'express';
 
 const router: ReturnType<typeof Router> = Router();
+const obsLog = createLogger('almadar:server:routes:observability');
 
 // Defense-in-depth: these endpoints expose telemetry/metrics/session data, so they
 // require an authenticated principal regardless of how the router is mounted.
@@ -35,7 +37,7 @@ router.get('/metrics', async (_req, res) => {
     };
     res.json(snapshot);
   } catch (error) {
-    console.error('Metrics error:', error);
+    obsLog.error('Metrics error', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ error: 'Failed to get metrics' });
   }
 });
@@ -54,7 +56,7 @@ router.get('/health', async (_req, res) => {
       checks: health,
     });
   } catch (error) {
-    console.error('Health check error:', error);
+    obsLog.error('Health check error', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({
       status: 'unhealthy',
       error: 'Health check failed',

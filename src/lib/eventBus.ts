@@ -15,6 +15,7 @@
  * @packageDocumentation
  */
 
+import { createLogger } from '@almadar/logger';
 import type {
   BusEvent,
   BusEventListener,
@@ -24,6 +25,8 @@ import type {
 } from '@almadar/core';
 
 export type { BusEvent, BusEventListener, BusEventSource, EventPayload, Unsubscribe };
+
+const busLog = createLogger('almadar:server:bus');
 
 export interface EventLogEntry {
   event: string;
@@ -73,7 +76,7 @@ export class EventBus {
     };
 
     if (this.debug) {
-      console.log(`[EventBus] Emitting ${event}:`, payload);
+      busLog.info(`Emitting ${event}`, { payload });
     }
 
     const handlers = this.handlers.get(event);
@@ -83,7 +86,7 @@ export class EventBus {
         try {
           handler(envelope);
         } catch (err) {
-          console.error(`[EventBus] Error in handler for ${event}:`, err);
+          busLog.error(`Error in handler for ${event}`, { error: err instanceof Error ? err.message : String(err) });
         }
       });
     }
@@ -98,7 +101,7 @@ export class EventBus {
           try {
             handler(envelope);
           } catch (err) {
-            console.error(`[EventBus] Error in wildcard handler for ${event}:`, err);
+            busLog.error(`Error in wildcard handler for ${event}`, { error: err instanceof Error ? err.message : String(err) });
           }
         });
       }

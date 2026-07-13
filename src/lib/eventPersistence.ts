@@ -10,6 +10,10 @@
  * @packageDocumentation
  */
 
+import { createLogger } from '@almadar/logger';
+
+const persistenceLog = createLogger('almadar:server:event-persistence');
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -256,7 +260,7 @@ export class EventPersistence {
     if (this.cleanupTimer) return;
     this.cleanupTimer = setInterval(() => {
       this.cleanup().catch(err => {
-        console.error('[EventPersistence] Cleanup error:', err);
+        persistenceLog.error('Cleanup error', { error: err instanceof Error ? err.message : String(err) });
       });
     }, this.options.cleanupIntervalMs);
   }

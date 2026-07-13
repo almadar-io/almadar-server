@@ -10,6 +10,9 @@
 
 import { getAuth } from '../lib/db.js';
 import type { Request, Response, NextFunction } from 'express';
+import { createLogger } from '@almadar/logger';
+
+const multiUserLog = createLogger('almadar:server:middleware:multi-user');
 
 // Extend Express Request to include Firebase user
 declare global {
@@ -86,7 +89,7 @@ export async function verifyFirebaseAuth(
 
     next();
   } catch (error) {
-    console.error('Token verification failed:', error);
+    multiUserLog.error('Token verification failed', { error: error instanceof Error ? error.message : String(error) });
     res.status(401).json({ error: 'Invalid token' });
   }
 }

@@ -8,7 +8,10 @@
  * @packageDocumentation
  */
 
+import { createLogger } from '@almadar/logger';
 import { getAuth } from '../lib/db.js';
+
+const syncLog = createLogger('almadar:server:websocket:statesync');
 
 // Type definitions for Socket.IO (to avoid dependency)
 interface Socket {
@@ -49,7 +52,7 @@ export async function setupStateSyncWebSocket(io: SocketServer): Promise<void> {
 
       next();
     } catch (error) {
-      console.error('Socket auth failed:', error);
+      syncLog.error('Socket auth failed', { error: error instanceof Error ? error.message : String(error) });
       next(new Error('Invalid token'));
     }
   });
@@ -58,7 +61,7 @@ export async function setupStateSyncWebSocket(io: SocketServer): Promise<void> {
     const userId = socket.data.user.uid;
     const clientId = socket.handshake.auth.clientId;
 
-    console.log(`[StateSync] Client ${clientId} connected for user ${userId}`);
+    syncLog.info('Client connected', { clientId, userId });
 
     // Join user's room for targeted updates
     socket.join(`user:${userId}`);
@@ -70,7 +73,7 @@ export async function setupStateSyncWebSocket(io: SocketServer): Promise<void> {
     });
 
     socket.on('disconnect', () => {
-      console.log(`[StateSync] Client ${clientId} disconnected`);
+      syncLog.info('Client disconnected', { clientId });
       socket.leave(`user:${userId}`);
     });
   });

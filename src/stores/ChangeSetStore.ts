@@ -7,8 +7,10 @@
 
 import type { ChangeSetDocument, HistoryMeta } from '@almadar/core';
 import { getFirestore } from '../lib/db.js';
+import { createLogger } from '@almadar/logger';
 
 const CHANGESETS_COLLECTION = 'changesets';
+const changesetLog = createLogger('almadar:server:stores:changeset');
 
 export class ChangeSetStore {
   private appsCollection: string;
@@ -57,7 +59,7 @@ export class ChangeSetStore {
 
       return query.docs.map((doc) => doc.data() as ChangeSetDocument);
     } catch (error) {
-      console.error('[ChangeSetStore] Error getting change history:', error);
+      changesetLog.error('Error getting change history', { error: error instanceof Error ? error.message : String(error) });
       return [];
     }
   }

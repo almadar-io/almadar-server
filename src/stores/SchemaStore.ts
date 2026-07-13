@@ -6,10 +6,13 @@
  */
 
 import type { OrbitalSchema, StatsView, AppSummary, SaveOptions, SaveResult, DomainContext } from '@almadar/core';
+import { createLogger } from '@almadar/logger';
 import { getFirestore } from '../lib/db.js';
 import { toFirestoreFormat, fromFirestoreFormat, type FirestoreSchemaDoc } from './firestoreFormat.js';
 import { SchemaProtectionService } from './SchemaProtectionService.js';
 import type { SnapshotStore } from './SnapshotStore.js';
+
+const schemaLog = createLogger('almadar:server:stores:schema');
 
 const SCHEMA_CACHE_TTL_MS = 60_000;
 const LIST_CACHE_TTL_MS = 30_000;
@@ -52,7 +55,7 @@ export class SchemaStore {
       this.schemaCache.set(cacheKey, { schema, timestamp: Date.now() });
       return schema;
     } catch (error) {
-      console.error('[SchemaStore] Error fetching schema:', error);
+      schemaLog.error('Error fetching schema', { error: error instanceof Error ? error.message : String(error) });
       return null;
     }
   }
@@ -136,7 +139,7 @@ export class SchemaStore {
       this.invalidateCache(uid, appId);
       return { success: true, snapshotId };
     } catch (error) {
-      console.error('[SchemaStore] Error saving schema:', error);
+      schemaLog.error('Error saving schema', { error: error instanceof Error ? error.message : String(error) });
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -183,7 +186,7 @@ export class SchemaStore {
       this.invalidateCache(uid, appId);
       return true;
     } catch (error) {
-      console.error('[SchemaStore] Error deleting app:', error);
+      schemaLog.error('Error deleting app', { error: error instanceof Error ? error.message : String(error) });
       return false;
     }
   }
@@ -223,7 +226,7 @@ export class SchemaStore {
       this.listCache.set(uid, { apps, timestamp: Date.now() });
       return apps;
     } catch (error) {
-      console.error('[SchemaStore] Error listing apps:', error);
+      schemaLog.error('Error listing apps', { error: error instanceof Error ? error.message : String(error) });
       return [];
     }
   }

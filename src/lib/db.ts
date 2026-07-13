@@ -10,7 +10,10 @@
  * `admin.initializeApp()` before using any Firebase-dependent features.
  */
 
+import { createLogger } from '@almadar/logger';
 import admin from 'firebase-admin';
+
+const dbLog = createLogger('almadar:server:db');
 
 /**
  * Initialize Firebase Admin SDK from environment variables.
@@ -34,7 +37,7 @@ export function initializeFirebase(): admin.app.App {
     const app = admin.initializeApp({
       projectId: projectId || 'demo-project',
     });
-    console.log(`Firebase Admin initialized for emulator: ${emulatorHost}`);
+    dbLog.info('Firebase Admin initialized for emulator', { emulatorHost });
     return app;
   }
 
@@ -84,6 +87,17 @@ export function initializeFirebase(): admin.app.App {
  */
 function getApp(): admin.app.App {
   if (admin.apps.length === 0) {
+    // In non-production, auto-initialize if not done yet. This protects against
+    // module resolution differences in pnpm workspaces, early imports in scripts,
+    // or forgetting the explicit call in dev. In prod we still require explicit init.
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        dbLog.warn('Firebase not yet initialized in this module instance (possible pnpm module duplication); auto-initializing from env');
+        return initializeFirebase();
+      } catch (e) {
+        // fall through to the hard error
+      }
+    }
     throw new Error(
       '@almadar/server: Firebase Admin SDK is not initialized. ' +
       'Call initializeFirebase() or admin.initializeApp() before using @almadar/server.'
@@ -92,11 +106,46 @@ function getApp(): admin.app.App {
   return admin.app();
 }
 
+// Tracks Firestore instances we've already configured, so settings() runs once
+// per instance (firebase-admin throws if settings() is called twice or after use).
+const configuredFirestores = new WeakSet<admin.firestore.Firestore>();
+
+/**
+ * Apply the named-database setting from env to a Firestore instance, once.
+ *
+ * Reads FIRESTORE_DATABASE_ID (canonical) or FB_DB_ID (legacy app alias). This is
+ * what makes every @almadar/server module instance — including duplicate copies
+ * loaded via pnpm workspace resolution in dependent packages — target the SAME
+ * named database instead of "(default)". Without it, a library that resolves a
+ * second @almadar/server copy reads the wrong database and silently sees no data.
+ *
+ * No-op unless the env var is set (apps without a named DB keep default behavior),
+ * and swallows the "already initialized" error when the app bootstrap already
+ * configured this instance itself.
+ */
+function applyDatabaseSettings(firestore: admin.firestore.Firestore): void {
+  if (configuredFirestores.has(firestore)) return;
+  configuredFirestores.add(firestore);
+
+  const databaseId = process.env.FIRESTORE_DATABASE_ID ?? process.env.FB_DB_ID;
+  if (!databaseId) return;
+
+  try {
+    firestore.settings({ ignoreUndefinedProperties: true, databaseId });
+  } catch {
+    // Firestore was already used/configured on this instance (e.g. the app
+    // bootstrap called settings() first). The databaseId is already applied there.
+  }
+}
+
 /**
  * Get Firestore instance from the pre-initialized Firebase app.
+ * Applies the named-database setting from env on first access per instance.
  */
 export function getFirestore(): admin.firestore.Firestore {
-  return getApp().firestore();
+  const firestore = getApp().firestore();
+  applyDatabaseSettings(firestore);
+  return firestore;
 }
 
 /**

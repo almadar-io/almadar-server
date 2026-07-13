@@ -6,9 +6,11 @@
 
 import type { ValidationResults, ValidationMeta } from '@almadar/core';
 import { getFirestore } from '../lib/db.js';
+import { createLogger } from '@almadar/logger';
 
 const VALIDATION_COLLECTION = 'validation';
 const VALIDATION_DOC_ID = 'current';
+const validationLog = createLogger('almadar:server:stores:validation');
 
 export class ValidationStore {
   private appsCollection: string;
@@ -52,7 +54,7 @@ export class ValidationStore {
       if (!doc.exists) return null;
       return doc.data() as ValidationResults;
     } catch (error) {
-      console.error('[ValidationStore] Error getting validation results:', error);
+      validationLog.error('Error getting validation results', { error: error instanceof Error ? error.message : String(error) });
       return null;
     }
   }

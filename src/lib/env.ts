@@ -1,8 +1,11 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
+import { createLogger } from '@almadar/logger';
 
 // Load environment variables
 dotenv.config();
+
+const envLog = createLogger('almadar:server:env');
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('production'),
@@ -43,7 +46,7 @@ const envSchema = z.object({
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.error('❌ Invalid environment variables:', parsed.error.flatten().fieldErrors);
+  envLog.error('Invalid environment variables', { fieldErrors: parsed.error.flatten().fieldErrors });
   throw new Error('Invalid environment variables');
 }
 

@@ -12,8 +12,11 @@
  * @packageDocumentation
  */
 
+import { createLogger } from '@almadar/logger';
 import type { BusEventListener, BusEventSource, EventPayload } from '@almadar/core';
 import { EventBus, type EventLogEntry } from './eventBus.js';
+
+const transportLog = createLogger('almadar:server:transport');
 
 // ============================================================================
 // Transport Interface
@@ -139,7 +142,7 @@ export class RedisTransport implements IEventBusTransport {
         const message = JSON.parse(raw) as TransportMessage;
         receiver(message);
       } catch {
-        console.error('[RedisTransport] Failed to parse message:', raw);
+        transportLog.error('RedisTransport failed to parse message', { raw });
       }
     });
   }
@@ -219,7 +222,7 @@ export class DistributedEventBus {
       };
       // Fire-and-forget publish (don't block the emit)
       this.transport.publish(message).catch((err) => {
-        console.error('[DistributedEventBus] Transport publish error:', err);
+        transportLog.error('DistributedEventBus transport publish error', { error: err instanceof Error ? err.message : String(err) });
       });
     }
   }

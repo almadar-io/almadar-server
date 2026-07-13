@@ -13,6 +13,10 @@
  * @packageDocumentation
  */
 
+import { createLogger } from '@almadar/logger';
+
+const discoveryLog = createLogger('almadar:server:service-discovery');
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -283,7 +287,7 @@ export class ServiceDiscovery {
     if (this.cleanupTimer) return;
     this.cleanupTimer = setInterval(() => {
       this.registry.cleanup(this.options.heartbeatTtlMs).catch(err => {
-        console.error('[ServiceDiscovery] Cleanup error:', err);
+        discoveryLog.error('Cleanup error', { error: err instanceof Error ? err.message : String(err) });
       });
     }, this.options.cleanupIntervalMs);
   }

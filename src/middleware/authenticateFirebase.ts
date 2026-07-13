@@ -50,8 +50,8 @@ export async function authenticateFirebase(req: Request, res: Response, next: Ne
 
     return next();
   } catch (error) {
-    authLog.warn('auth:failed', { error: error instanceof Error ? error.message : String(error) });
-    console.error('Firebase authentication failed:', error);
+    // Expected 401 path: expired / invalid / rejected token — a routine client condition, not a server error.
+    authLog.info('auth:rejected', { reason: error instanceof Error ? error.message : String(error) });
     return res.status(401).json({ error: 'Unauthorized' });
   }
 }

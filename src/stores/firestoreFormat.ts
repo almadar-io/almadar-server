@@ -5,7 +5,10 @@
  * OrbitalSchema fields (orbitals, traits, services) to JSON strings.
  */
 
+import { createLogger } from '@almadar/logger';
 import type { OrbitalSchema, Orbital } from '@almadar/core';
+
+const firestoreLog = createLogger('almadar:server:stores:firestore');
 
 /** Firestore-safe document shape with serialized nested fields. */
 export interface FirestoreSchemaDoc {
@@ -75,7 +78,7 @@ export function fromFirestoreFormat(data: FirestoreSchemaDoc): OrbitalSchema {
       delete result._orbitalsJson;
       delete result.orbitalCount;
     } catch (e) {
-      console.warn('[OrbitalStore] Failed to parse _orbitalsJson:', e);
+      firestoreLog.warn('Failed to parse _orbitalsJson', { error: e instanceof Error ? e.message : String(e) });
       result.orbitals = [];
     }
   }
@@ -87,7 +90,7 @@ export function fromFirestoreFormat(data: FirestoreSchemaDoc): OrbitalSchema {
       delete result._traitsJson;
       delete result.traitCount;
     } catch (e) {
-      console.warn('[OrbitalStore] Failed to parse _traitsJson:', e);
+      firestoreLog.warn('Failed to parse _traitsJson', { error: e instanceof Error ? e.message : String(e) });
     }
   }
 
@@ -98,7 +101,7 @@ export function fromFirestoreFormat(data: FirestoreSchemaDoc): OrbitalSchema {
       delete result._servicesJson;
       delete result.serviceCount;
     } catch (e) {
-      console.warn('[OrbitalStore] Failed to parse _servicesJson:', e);
+      firestoreLog.warn('Failed to parse _servicesJson', { error: e instanceof Error ? e.message : String(e) });
     }
   }
 
