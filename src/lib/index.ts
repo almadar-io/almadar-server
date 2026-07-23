@@ -1,5 +1,5 @@
 export { env } from './env.js';
-export { getFirestore, getAuth, admin } from './db.js';
+export { getFirestore, getAuth } from './db.js';
 export { logger } from './logger.js';
 export { getServerEventBus, resetServerEventBus, emitEntityEvent } from './eventBus.js';
 export {

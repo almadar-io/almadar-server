@@ -38,7 +38,7 @@ export {
   type IEventStore,
 } from './lib/eventPersistence.js';
 export { debugEventsRouter } from './lib/debugRouter.js';
-export { initializeFirebase, getFirestore, getAuth, admin, db } from './lib/db.js';
+export { initializeFirebase, getFirestore, getAuth, db } from './lib/db.js';
 export {
   setupEventBroadcast,
   getWebSocketServer,
