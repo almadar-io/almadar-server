@@ -20,6 +20,7 @@ import {
   getFirestore as adminGetFirestore,
   initializeFirestore,
   type Firestore,
+  type FirestoreSettings,
 } from 'firebase-admin/firestore';
 import { getAuth as adminGetAuth, type Auth } from 'firebase-admin/auth';
 
@@ -98,6 +99,15 @@ function getAppInstance(): App {
 }
 
 /**
+ * Settings passed to initializeFirestore at creation time. firebase-admin v14's
+ * FirestoreSettings type only exposes preferRest, but the underlying
+ * @google-cloud/firestore accepts more — we extend the interface to add them.
+ */
+interface FirestoreInitSettings extends FirestoreSettings {
+  ignoreUndefinedProperties?: boolean;
+}
+
+/**
  * Get Firestore instance for the named database from env.
  *
  * Uses `initializeFirestore(app, settings, databaseId)` which creates a separate
@@ -108,12 +118,11 @@ function getAppInstance(): App {
  */
 export function getFirestore(): Firestore {
   const app = getAppInstance();
-  const databaseId = process.env.FIRESTORE_DATABASE_ID ?? process.env.FB_DB_ID;
-  const firestore = databaseId
-    ? initializeFirestore(app, {}, databaseId)
-    : initializeFirestore(app);
-  firestore.settings({ ignoreUndefinedProperties: true });
-  return firestore;
+  const databaseId = process.env.FIREBASE_DATABASE_ID ?? process.env.FB_DB_ID;
+  const settings: FirestoreInitSettings = { ignoreUndefinedProperties: true };
+  return databaseId
+    ? initializeFirestore(app, settings, databaseId)
+    : initializeFirestore(app, settings);
 }
 
 export function getAuth(): Auth {
