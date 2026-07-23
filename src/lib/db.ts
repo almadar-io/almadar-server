@@ -127,23 +127,27 @@ function applyDatabaseSettings(firestore: admin.firestore.Firestore): void {
   if (configuredFirestores.has(firestore)) return;
   configuredFirestores.add(firestore);
 
-  const databaseId = process.env.FIRESTORE_DATABASE_ID ?? process.env.FB_DB_ID;
-  if (!databaseId) return;
-
   try {
-    firestore.settings({ ignoreUndefinedProperties: true, databaseId });
+    firestore.settings({ ignoreUndefinedProperties: true });
   } catch {
-    // Firestore was already used/configured on this instance (e.g. the app
-    // bootstrap called settings() first). The databaseId is already applied there.
+    // Firestore was already used/configured on this instance.
   }
 }
 
 /**
  * Get Firestore instance from the pre-initialized Firebase app.
- * Applies the named-database setting from env on first access per instance.
+ *
+ * Passes the named-database ID directly to `app.firestore(databaseId)` —
+ * firebase-admin silently ignores `databaseId` in `settings()`, so it must
+ * be set at instance creation time. Falls back to the default database when
+ * no env var is set.
  */
 export function getFirestore(): admin.firestore.Firestore {
-  const firestore = getApp().firestore();
+  const databaseId = process.env.FIRESTORE_DATABASE_ID ?? process.env.FB_DB_ID;
+  // firebase-admin v12 types don't expose firestore(databaseId), but the runtime
+  // (v13+) supports it. Cast to a precise callable signature — not `any`.
+  const factory = getApp().firestore as (databaseId?: string) => admin.firestore.Firestore;
+  const firestore = databaseId ? factory(databaseId) : factory();
   applyDatabaseSettings(firestore);
   return firestore;
 }
