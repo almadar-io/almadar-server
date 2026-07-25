@@ -13,3 +13,5 @@ export {
 export { validateBody, validateQuery, validateParams } from './validation';
 
 export { authenticateFirebase } from './authenticateFirebase.js';
+
+export { resolveDevIdentity } from './devIdentity.js';

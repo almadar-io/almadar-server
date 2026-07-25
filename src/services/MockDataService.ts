@@ -7,10 +7,41 @@
  * @packageDocumentation
  */
 
-import type { EntityRow, FieldValue } from '@almadar/core';
+import { resolvePersonaSpec, type EntityRow, type FieldValue } from '@almadar/core';
 import { faker } from '@faker-js/faker';
 import { env } from '../lib/env.js';
 import { logger } from '../lib/logger.js';
+
+/**
+ * `ALMADAR_PERSONA_OWNS` — the columns that hold a user id, as `Entity.field`
+ * pairs (`RosterEntry.memberId,Appointment.patientId`). Declared, never inferred
+ * from a field name: a guess would silently scope the wrong column. Mirrors
+ * `MockPersistenceConfig.ownerFields` on the interpreter path and
+ * `OWNER_FIELDS_ENV` in the compiler's seeder.
+ */
+function ownerColumnsFor(entityName: string): string[] {
+  const spec = process.env['ALMADAR_PERSONA_OWNS'];
+  if (!spec) return [];
+  const target = entityName.toLowerCase();
+  return spec
+    .split(',')
+    .map((pair) => pair.trim().split('.'))
+    .filter(([entity, field]) => Boolean(field) && entity?.toLowerCase() === target)
+    .map(([, field]) => field)
+    .filter((field): field is string => Boolean(field));
+}
+
+/** The seeded viewer named by `ALMADAR_PERSONA`, if any. */
+function seedViewerId(): string | undefined {
+  const spec = process.env['ALMADAR_PERSONA'];
+  if (!spec) return undefined;
+  try {
+    return resolvePersonaSpec(spec).id;
+  } catch (error) {
+    logger.warn(`[Mock] ALMADAR_PERSONA unresolved, rows left unowned: ${String(error)}`);
+    return undefined;
+  }
+}
 
 // ============================================================================
 // Types
@@ -111,8 +142,18 @@ export class MockDataService {
 
     logger.info(`[Mock] Seeding ${count} ${entityName}...`);
 
+    const ownerCols = ownerColumnsFor(entityName);
+    const viewerId = seedViewerId();
+
     for (let i = 0; i < count; i++) {
       const item = this.generateMockItem(normalized, fields, i + 1);
+      // Give the viewer every other row of each DECLARED owner column, so an
+      // ownership-scoped view ("only my bookings") has real data while a second
+      // persona still sees a different, non-empty set. Against rows that never
+      // mention the viewer, a working filter and a broken one both render empty.
+      if (viewerId && ownerCols.length > 0 && i % 2 === 0) {
+        for (const col of ownerCols) item[col] = viewerId;
+      }
       store.set(item.id, item);
     }
   }

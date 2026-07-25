@@ -1,38 +1,20 @@
 import { NextFunction, Request, Response } from 'express';
-import type { DecodedIdToken } from 'firebase-admin/auth';
 import { getAuth } from '../lib/db.js';
-import { env } from '../lib/env.js';
 import { createLogger } from '@almadar/logger';
+import { resolveDevIdentity } from './devIdentity.js';
 
 const authLog = createLogger('almadar:server:auth');
 
 const BEARER_PREFIX = 'Bearer ';
 
-/** Fake dev user injected ONLY when ALLOW_DEV_AUTH_BYPASS=true and no auth header is present */
-const DEV_USER: DecodedIdToken = {
-  uid: 'dev-user-001',
-  email: 'dev@localhost',
-  email_verified: true,
-  aud: 'dev-project',
-  auth_time: Math.floor(Date.now() / 1000),
-  exp: Math.floor(Date.now() / 1000) + 3600,
-  iat: Math.floor(Date.now() / 1000),
-  iss: 'https://securetoken.google.com/dev-project',
-  sub: 'dev-user-001',
-  firebase: {
-    identities: {},
-    sign_in_provider: 'custom',
-  },
-};
-
 export async function authenticateFirebase(req: Request, res: Response, next: NextFunction) {
   const authorization = req.headers.authorization;
 
-  // Dev bypass: ONLY when explicitly opted in via ALLOW_DEV_AUTH_BYPASS (never keyed on NODE_ENV — fail closed by default)
-  if (env.ALLOW_DEV_AUTH_BYPASS === 'true' && (!authorization || !authorization.startsWith(BEARER_PREFIX))) {
-    authLog.debug('auth:devBypass', { uid: DEV_USER.uid });
-    req.firebaseUser = DEV_USER;
-    res.locals.firebaseUser = DEV_USER;
+  const devUser = resolveDevIdentity(authorization);
+  if (devUser) {
+    authLog.debug('auth:devBypass', { uid: devUser.uid, role: devUser['role'] });
+    req.firebaseUser = devUser;
+    res.locals.firebaseUser = devUser;
     return next();
   }
 
@@ -57,5 +39,3 @@ export async function authenticateFirebase(req: Request, res: Response, next: Ne
 }
 
 export default authenticateFirebase;
-
-
