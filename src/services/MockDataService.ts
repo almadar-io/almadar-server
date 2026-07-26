@@ -7,7 +7,14 @@
  * @packageDocumentation
  */
 
-import { resolvePersonaSpec, type EntityRow, type FieldValue } from '@almadar/core';
+import {
+  resolvePersonaSpec,
+  type EntityField,
+  type EntityPersistence,
+  type EntityRow,
+  type FieldValue,
+} from '@almadar/core';
+import { sampleFieldValue, sampleRowCount } from '@almadar/core/mock';
 import { faker } from '@faker-js/faker';
 import { env } from '../lib/env.js';
 import { logger } from '../lib/logger.js';
@@ -31,6 +38,9 @@ function ownerColumnsFor(entityName: string): string[] {
     .filter((field): field is string => Boolean(field));
 }
 
+/** Reference `now` for seeded rows, matching the interpreted path's anchor. */
+const SEED_REFERENCE_TIMESTAMP = '2024-01-01T00:00:00.000Z';
+
 /** The seeded viewer named by `ALMADAR_PERSONA`, if any. */
 function seedViewerId(): string | undefined {
   const spec = process.env['ALMADAR_PERSONA'];
@@ -47,23 +57,14 @@ function seedViewerId(): string | undefined {
 // Types
 // ============================================================================
 
-export interface FieldSchema {
-  name: string;
-  type: 'string' | 'number' | 'boolean' | 'date' | 'datetime' | 'enum' | 'relation' | 'array' | 'object';
-  required?: boolean;
-  enumValues?: string[];
-  min?: number;
-  max?: number;
-  fakerMethod?: string;
-  relatedEntity?: string;
-  /**
-   * Declared default value from the .orb schema. When present, the mock
-   * generator returns this verbatim instead of a faker-generated random,
-   * matching `@almadar/runtime`'s MockPersistenceAdapter behavior. The
-   * special string `"@now"` resolves to the current ISO timestamp.
-   */
-  default?: string | number | boolean;
-}
+/**
+ * The canonical entity field. This used to be a local shape whose narrow
+ * `default?: string | number | boolean` forced the compiled path to drop every
+ * array and object default — so authored `features = ["Item","Item 2"]` content
+ * could never reach a generated app. Aliasing the canonical type is what lets
+ * one policy serve both paths.
+ */
+export type FieldSchema = EntityField & { name: string };
 
 export interface EntitySchema {
   fields: FieldSchema[];
@@ -136,9 +137,15 @@ export class MockDataService {
   /**
    * Seed an entity with mock data.
    */
-  seed(entityName: string, fields: FieldSchema[], count: number = 10): void {
+  seed(
+    entityName: string,
+    fields: FieldSchema[],
+    requested: number = 10,
+    persistence?: EntityPersistence,
+  ): void {
     const store = this.getStore(entityName);
     const normalized = entityName.toLowerCase();
+    const count = sampleRowCount({ name: entityName, persistence, fields }, requested);
 
     logger.info(`[Mock] Seeding ${count} ${entityName}...`);
 
@@ -146,7 +153,7 @@ export class MockDataService {
     const viewerId = seedViewerId();
 
     for (let i = 0; i < count; i++) {
-      const item = this.generateMockItem(normalized, fields, i + 1);
+      const item = this.generateMockItem(normalized, fields, i + 1, persistence);
       // Give the viewer every other row of each DECLARED owner column, so an
       // ownership-scoped view ("only my bookings") has real data while a second
       // persona still sees a different, non-empty set. Against rows that never
@@ -161,22 +168,28 @@ export class MockDataService {
   /**
    * Generate a single mock item based on field schemas.
    */
-  private generateMockItem(entityName: string, fields: FieldSchema[], index: number): BaseEntity & EntityRow {
+  private generateMockItem(
+    entityName: string,
+    fields: FieldSchema[],
+    index: number,
+    persistence?: EntityPersistence,
+  ): BaseEntity & EntityRow {
     const id = this.nextId(entityName);
-    const now = new Date();
+    // Anchored, not wallclock: a moving `updatedAt` made every row read as
+    // "changed" between frames and disagreed with the interpreted path's rows.
     const item: EntityRow = {
       id,
       createdAt: faker.date.past({ years: 1 }),
-      updatedAt: now,
+      updatedAt: new Date(SEED_REFERENCE_TIMESTAMP),
     };
 
     for (const field of fields) {
       if (field.name === 'id' || field.name === 'createdAt' || field.name === 'updatedAt') {
         continue;
       }
-      const value = this.generateFieldValue(entityName, field, index);
+      const value = this.generateFieldValue(entityName, field, index, persistence);
       if (value !== undefined) {
-        item[field.name] = value as FieldValue;
+        item[field.name] = value;
       }
     }
 
@@ -184,108 +197,32 @@ export class MockDataService {
   }
 
   /**
-   * Generate a mock value for a field based on its schema.
+   * Generate a mock value for a field.
+   *
+   * The policy lives in `@almadar/core/mock`; only the store-aware relation
+   * lookup is local, because resolving a real sibling id needs this instance's
+   * stores. The old 20% `Math.random()` field-drop is gone: it was unseeded, so
+   * it fired non-deterministically on essentially every field (`required` is
+   * emitted only for `name : string!`), which made this path disagree with every
+   * other seeder on every row.
    */
-  private generateFieldValue(entityName: string, field: FieldSchema, index: number): unknown {
-    // Mock-seed default policy: numeric fields preserve their declared
-    // default (so `tokenCount : number = 0` stays 0), every other type
-    // falls through to faker. Mirrors the gate in the compiled-path
-    // codegen (`backend.rs:generate_seed_mock_data`) and the runtime
-    // mirror (`MockPersistenceAdapter.generateFieldValue`). This is a
-    // defense-in-depth gate: even if a stale `seedMockData.ts` carries
-    // a non-numeric `default: ""`, faker still wins here.
-    if (field.type === 'number' && field.default !== undefined) {
-      return field.default;
-    }
-
-    // Handle optional fields - 80% chance of having a value
-    if (!field.required && Math.random() > 0.8) {
-      return undefined;
-    }
-
-    switch (field.type) {
-      case 'string':
-        return this.generateStringValue(entityName, field, index);
-
-      case 'number':
-        return faker.number.int({
-          min: field.min ?? 0,
-          max: field.max ?? 1000,
-        });
-
-      case 'boolean':
-        return faker.datatype.boolean();
-
-      case 'date':
-      case 'datetime':
-        return this.generateDateValue(field);
-
-      case 'enum':
-        if (field.enumValues && field.enumValues.length > 0) {
-          return faker.helpers.arrayElement(field.enumValues);
+  private generateFieldValue(
+    entityName: string,
+    field: FieldSchema,
+    index: number,
+    persistence?: EntityPersistence,
+  ): FieldValue | undefined {
+    if (field.type === 'relation') {
+      const related = field.relation?.entity;
+      if (related) {
+        const relatedStore = this.stores.get(related.toLowerCase());
+        if (relatedStore && relatedStore.size > 0) {
+          return faker.helpers.arrayElement(Array.from(relatedStore.keys()));
         }
-        return null;
-
-      case 'relation':
-        // For relations, generate a placeholder ID or null
-        if (field.relatedEntity) {
-          const relatedStore = this.stores.get(field.relatedEntity.toLowerCase());
-          if (relatedStore && relatedStore.size > 0) {
-            const ids = Array.from(relatedStore.keys());
-            return faker.helpers.arrayElement(ids);
-          }
-        }
-        return null;
-
-      case 'array':
-        // Generate an empty array for now
-        return [];
-
-      case 'object':
-        // JSON/Struct-typed fields seed as an empty object placeholder.
-        return {};
-
-      default:
-        return null;
+      }
+      return null;
     }
-  }
-
-  private generateStringValue(entityName: string, field: FieldSchema, _index: number): string {
-    if (field.enumValues && field.enumValues.length > 0) {
-      return faker.helpers.arrayElement(field.enumValues);
-    }
-    // Image-bearing string fields → free Picsum stock photo. Same fallback
-    // taxonomy as @almadar/runtime's MockPersistenceAdapter so server-mode
-    // and runtime-mode produce visually consistent seed data.
-    const lname = field.name.toLowerCase();
-    if (
-      lname === 'image' ||
-      lname === 'imageurl' ||
-      lname === 'image_url' ||
-      lname === 'photo' ||
-      lname === 'photourl' ||
-      lname === 'photo_url' ||
-      lname === 'avatar' ||
-      lname === 'avatarurl' ||
-      lname === 'avatar_url' ||
-      lname === 'thumbnail' ||
-      lname === 'thumbnailurl' ||
-      lname === 'thumbnail_url' ||
-      lname === 'picture' ||
-      lname === 'pictureurl' ||
-      lname === 'cover' ||
-      lname === 'coverurl' ||
-      lname === 'banner' ||
-      lname === 'bannerurl'
-    ) {
-      const seed = `${entityName}-${field.name}-${faker.number.int({ min: 0, max: 1000 })}`;
-      return `https://picsum.photos/seed/${encodeURIComponent(seed)}/400/400`;
-    }
-    return faker.lorem.words(2);
-  }
-
-  private generateDateValue(_field: FieldSchema): Date {
-    return faker.date.anytime();
+    return sampleFieldValue(field, { entityName, index, strategy: 'seeded', persistence });
   }
 
   // ============================================================================
