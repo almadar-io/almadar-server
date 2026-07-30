@@ -41,12 +41,18 @@ function ownerColumnsFor(entityName: string): string[] {
 /** Reference `now` for seeded rows, matching the interpreted path's anchor. */
 const SEED_REFERENCE_TIMESTAMP = '2024-01-01T00:00:00.000Z';
 
-/** The seeded viewer named by `ALMADAR_PERSONA`, if any. */
+/**
+ * The seeded viewer named by `ALMADAR_PERSONA`, if any. This service has no
+ * schema in hand, so only the self-contained JSON form resolves here; a bare
+ * id/role (which needs the app's declared roster) degrades to the existing
+ * warn-and-continue. The schema-aware rewire is Increment 4 (shells) of
+ * `Almadar_LOLO_Identity.md`.
+ */
 function seedViewerId(): string | undefined {
   const spec = process.env['ALMADAR_PERSONA'];
   if (!spec) return undefined;
   try {
-    return resolvePersonaSpec(spec).id;
+    return resolvePersonaSpec(spec, []).id;
   } catch (error) {
     logger.warn(`[Mock] ALMADAR_PERSONA unresolved, rows left unowned: ${String(error)}`);
     return undefined;
