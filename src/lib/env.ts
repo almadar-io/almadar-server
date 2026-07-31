@@ -35,8 +35,12 @@ const envSchema = z.object({
   // API configuration
   API_PREFIX: z.string().default('/api'),
 
-  // Mock data configuration
-  USE_MOCK_DATA: z.string().default('true').transform((v) => v === 'true'),
+  // Mock data is OFF unless explicitly opted in — same fail-closed rule as the
+  // auth bypass above. An unset flag must never silently serve fabricated,
+  // non-persisted rows from a server that believes it is in production.
+  // `z.enum` (not `z.string`) so a typo hard-fails at boot instead of falling
+  // through `v === 'true'` to a value nobody chose.
+  USE_MOCK_DATA: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
   MOCK_SEED: z
     .string()
     .optional()
@@ -51,3 +55,18 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data;
+
+// Mock data in production is never a configuration anyone intends: every write
+// is accepted with a 2xx and lost on restart, and every read is fabricated.
+// Refuse the boot rather than serve it — the same fail-closed posture as
+// ALLOW_DEV_AUTH_BYPASS, which is meaningless if the data underneath is fake.
+if (env.NODE_ENV === 'production' && env.USE_MOCK_DATA) {
+  envLog.error('USE_MOCK_DATA=true with NODE_ENV=production — refusing to start', {
+    reason: 'mock rows are in-memory and non-persisted; a production server must not serve them',
+    fix: 'unset USE_MOCK_DATA (it now defaults to false), or set NODE_ENV=development for local runs',
+  });
+  throw new Error(
+    '@almadar/server: USE_MOCK_DATA=true is not permitted when NODE_ENV=production. ' +
+      'Unset USE_MOCK_DATA to use the real data source, or set NODE_ENV=development.',
+  );
+}

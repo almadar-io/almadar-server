@@ -478,7 +478,10 @@ class FirebaseDataService implements DataService {
  */
 function createDataService(): DataService {
   if (env.USE_MOCK_DATA) {
-    logger.info('[DataService] Using MockDataService');
+    // warn, not info: rows are in-memory and lost on restart. env.ts refuses
+    // this combination outright under NODE_ENV=production, so reaching here
+    // means a deliberate dev opt-in — but it must still be visible in the log.
+    logger.warn('[DataService] USE_MOCK_DATA=true — serving in-memory mock rows, not the real data source');
     return new MockDataServiceAdapter();
   }
   logger.info('[DataService] Using FirebaseDataService');
