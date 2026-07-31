@@ -8,11 +8,13 @@
  */
 
 import {
+  personaFromIdentityRow,
   resolvePersonaSpec,
   type EntityField,
   type EntityPersistence,
   type EntityRow,
   type FieldValue,
+  type UserContext,
 } from '@almadar/core';
 import { sampleFieldValue, sampleRowCount } from '@almadar/core/mock';
 import { faker } from '@faker-js/faker';
@@ -41,24 +43,6 @@ function ownerColumnsFor(entityName: string): string[] {
 /** Reference `now` for seeded rows, matching the interpreted path's anchor. */
 const SEED_REFERENCE_TIMESTAMP = '2024-01-01T00:00:00.000Z';
 
-/**
- * The seeded viewer named by `ALMADAR_PERSONA`, if any. This service has no
- * schema in hand, so only the self-contained JSON form resolves here; a bare
- * id/role (which needs the app's declared roster) degrades to the existing
- * warn-and-continue. The schema-aware rewire is Increment 4 (shells) of
- * `Almadar_LOLO_Identity.md`.
- */
-function seedViewerId(): string | undefined {
-  const spec = process.env['ALMADAR_PERSONA'];
-  if (!spec) return undefined;
-  try {
-    return resolvePersonaSpec(spec, []).id;
-  } catch (error) {
-    logger.warn(`[Mock] ALMADAR_PERSONA unresolved, rows left unowned: ${String(error)}`);
-    return undefined;
-  }
-}
-
 // ============================================================================
 // Types
 // ============================================================================
@@ -75,6 +59,14 @@ export type FieldSchema = EntityField & { name: string };
 export interface EntitySchema {
   fields: FieldSchema[];
   seedCount?: number;
+  /**
+   * The declared entity name. Stores are keyed by COLLECTION here, so a
+   * relation naming its target entity (`assignee : Person`) cannot find the
+   * store (`people`) without this mapping.
+   */
+  name?: string;
+  /** `[identity]` — this collection's rows are the app's persona roster. */
+  identity?: boolean;
 }
 
 interface BaseEntity {
@@ -134,10 +126,79 @@ export class MockDataService {
   // ============================================================================
 
   /**
-   * Register an entity schema.
+   * Register an entity schema, keyed by collection (the key every store,
+   * `seed` call and route uses on this path).
    */
   registerSchema(entityName: string, schema: EntitySchema): void {
     this.schemas.set(entityName.toLowerCase(), schema);
+  }
+
+  /**
+   * The store key for a declared entity NAME.
+   *
+   * Stores are keyed by collection here, so `assignee : Person` against
+   * `entity Person [persistent: people]` must resolve `Person` → `people`. The
+   * old direct `Person`→`person` lookup always missed, so every relation column
+   * seeded as `null` and every ownership-scoped view was empty regardless of
+   * viewer. Falls back to the lowercased name for entities whose collection is
+   * their name.
+   */
+  private collectionFor(entityName: string): string {
+    const target = entityName.toLowerCase();
+    for (const [collection, schema] of this.schemas) {
+      if (schema.name?.toLowerCase() === target) return collection;
+    }
+    return target;
+  }
+
+  /**
+   * The collection holding the app's `[identity]` rows, or `undefined` when the
+   * app declares no identity entity. Declared by codegen off the OIR flag —
+   * never inferred from a collection name.
+   */
+  getIdentityCollection(): string | undefined {
+    for (const [collection, schema] of this.schemas) {
+      if (schema.identity === true) return collection;
+    }
+    return undefined;
+  }
+
+  /**
+   * The app's persona roster: the LIVE seeded rows of its `[identity]` entity.
+   *
+   * Live rows rather than a re-derivation, because the three seeders mint three
+   * different id schemes (`Person-N` in the Rust roster, `mock-people-N` here,
+   * `Person Id N` on the interpreter path). A persona whose id is not literally
+   * one of these rows owns nothing, and every ownership-scoped list renders
+   * empty — indistinguishable from a working filter over no data.
+   *
+   * Twin of `OrbitalServerRuntime.getIdentityRoster()` on the interpreter path.
+   */
+  getIdentityRoster(): UserContext[] {
+    const collection = this.getIdentityCollection();
+    if (!collection) return [];
+    return this.list<Record<string, FieldValue | undefined>>(collection)
+      .map((row) => personaFromIdentityRow(row))
+      .filter((persona): persona is UserContext => persona !== undefined);
+  }
+
+  /**
+   * The seeded viewer named by `ALMADAR_PERSONA`, if any.
+   *
+   * Resolves a bare id/role against the live roster above, so the viewer is
+   * literally one of the seeded rows. Before Increment 4 this passed an empty
+   * roster, so every bare spec threw and rows were left unowned — a generated
+   * app could not be booted as a named persona at all.
+   */
+  private seedViewerId(): string | undefined {
+    const spec = process.env['ALMADAR_PERSONA'];
+    if (!spec) return undefined;
+    try {
+      return resolvePersonaSpec(spec, this.getIdentityRoster()).id;
+    } catch (error) {
+      logger.warn(`[Mock] ALMADAR_PERSONA unresolved, rows left unowned: ${String(error)}`);
+      return undefined;
+    }
   }
 
   /**
@@ -155,8 +216,12 @@ export class MockDataService {
 
     logger.info(`[Mock] Seeding ${count} ${entityName}...`);
 
-    const ownerCols = ownerColumnsFor(entityName);
-    const viewerId = seedViewerId();
+    // `ALMADAR_PERSONA_OWNS` names `Entity.field` pairs (mirroring the
+    // interpreter path's entity-keyed `ownerFields`), but everything here is
+    // keyed by collection — so matching the raw key made `Ticket.assignee` miss
+    // `tickets`, and no generated app ever stamped an owner.
+    const ownerCols = ownerColumnsFor(this.schemas.get(normalized)?.name ?? entityName);
+    const viewerId = this.seedViewerId();
 
     for (let i = 0; i < count; i++) {
       const item = this.generateMockItem(normalized, fields, i + 1, persistence);
@@ -221,7 +286,7 @@ export class MockDataService {
     if (field.type === 'relation') {
       const related = field.relation?.entity;
       if (related) {
-        const relatedStore = this.stores.get(related.toLowerCase());
+        const relatedStore = this.stores.get(this.collectionFor(related));
         if (relatedStore && relatedStore.size > 0) {
           return faker.helpers.arrayElement(Array.from(relatedStore.keys()));
         }
