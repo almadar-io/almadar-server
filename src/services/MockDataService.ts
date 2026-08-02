@@ -9,6 +9,7 @@
 
 import {
   personaFromIdentityRow,
+  resolveDefaultViewer,
   resolvePersonaSpec,
   type EntityField,
   type EntityPersistence,
@@ -191,10 +192,18 @@ export class MockDataService {
    * app could not be booted as a named persona at all.
    */
   private seedViewerId(): string | undefined {
+    const roster = this.getIdentityRoster();
     const spec = process.env['ALMADAR_PERSONA'];
-    if (!spec) return undefined;
+    // No spec is not "nobody": an app declaring an [identity] roster has no
+    // anonymous viewer, and stamping nothing leaves every owner column empty, so
+    // every ownership-scoped @read matches zero rows and the app renders empty
+    // tables that look identical to a broken filter. Fall back to the FIRST
+    // declared persona — deterministic roster order, never a ranking of roles —
+    // exactly as the compiled path already does in
+    // `orbital-client/src/render_probe.rs` (`seed_sample_as` with the same id).
+    if (!spec) return resolveDefaultViewer(roster).id;
     try {
-      return resolvePersonaSpec(spec, this.getIdentityRoster()).id;
+      return resolvePersonaSpec(spec, roster).id;
     } catch (error) {
       logger.warn(`[Mock] ALMADAR_PERSONA unresolved, rows left unowned: ${String(error)}`);
       return undefined;
