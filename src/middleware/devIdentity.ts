@@ -1,13 +1,16 @@
 import type { DecodedIdToken } from 'firebase-admin/auth';
-import { decodeDevIdentityToken } from '@almadar/core';
+import { decodeDevIdentityToken, resolveDefaultViewer } from '@almadar/core';
 import { env } from '../lib/env.js';
+import { getMockDataService } from '../services/MockDataService.js';
 
 const BEARER_PREFIX = 'Bearer ';
 
 /**
- * The fixed dev viewer, used when the bypass is on and no credential was sent.
- * It has no `role`, so it can only exercise the ungated path — a persona-gated
- * screen needs a real persona, which is what the token form below carries.
+ * The fixed dev viewer, used when the bypass is on, no credential was sent,
+ * AND the app declares no `[identity]` roster. It has no `role`, so it can
+ * only exercise the ungated path — a persona-gated screen needs a real
+ * persona (the token form below, or the roster default resolved in
+ * {@link defaultRosterIdentity}).
  */
 const DEV_USER: DecodedIdToken = {
   uid: 'dev-user-001',
@@ -40,13 +43,42 @@ const DEV_USER: DecodedIdToken = {
  * Both Express (`authenticateFirebase`) and Hono (`@almadar/server-hono`) call
  * this; the shapes must not diverge between the two servers.
  */
+/**
+ * The credential-less dev viewer. When the app declares an `[identity]`
+ * roster, the anonymous viewer IS the roster's default member
+ * (`resolveDefaultViewer` — the interpreter/playground path already behaves
+ * this way): a roleless synthetic viewer makes every row-ACL'd list render
+ * empty, indistinguishable on screen from broken mock seeding. Bare
+ * {@link DEV_USER} remains the documented fallback for apps with no roster
+ * (and when mock data is off, where the roster is necessarily empty).
+ */
+function defaultRosterIdentity(): DecodedIdToken {
+  try {
+    const roster = getMockDataService().getIdentityRoster();
+    if (roster.length === 0) return DEV_USER;
+    const viewer = resolveDefaultViewer(roster);
+    return {
+      ...DEV_USER,
+      ...viewer,
+      uid: viewer.id,
+      sub: viewer.id,
+      email:
+        typeof viewer.email === 'string' && viewer.email !== ''
+          ? viewer.email
+          : `${viewer.id}@localhost`,
+    };
+  } catch {
+    return DEV_USER;
+  }
+}
+
 export function resolveDevIdentity(
   authorization: string | undefined,
 ): DecodedIdToken | undefined {
   if (env.ALLOW_DEV_AUTH_BYPASS !== 'true') return undefined;
 
   if (!authorization || !authorization.startsWith(BEARER_PREFIX)) {
-    return DEV_USER;
+    return defaultRosterIdentity();
   }
 
   const persona = decodeDevIdentityToken(authorization.slice(BEARER_PREFIX.length));

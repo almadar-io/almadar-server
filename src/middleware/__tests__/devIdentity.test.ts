@@ -59,4 +59,36 @@ describe('resolveDevIdentity', () => {
     const resolve = await withBypass('true');
     expect(resolve('Bearer almadar-dev.not-json')).toBeUndefined();
   });
+
+  it('resolves the roster default viewer when the app declares an [identity] roster', async () => {
+    // A roleless synthetic viewer makes every row-ACL'd list render empty —
+    // the anonymous dev viewer must BE a roster member when one exists
+    // (resolveDefaultViewer contract, mirrored from the interpreter path).
+    const resolve = await withBypass('true');
+    const { getMockDataService, resetMockDataService } = await import(
+      '../../services/MockDataService.js'
+    );
+    resetMockDataService();
+    const service = getMockDataService();
+    const personFields = [
+      { name: 'id', type: 'string' as const, required: true },
+      { name: 'name', type: 'string' as const, required: true },
+      {
+        name: 'role',
+        type: 'string' as const,
+        required: true,
+        values: ['manager', 'trainer', 'trainee'],
+      },
+    ];
+    service.registerSchema('people', { name: 'Person', identity: true, fields: personFields });
+    service.seed('people', personFields, 3);
+    const roster = service.getIdentityRoster();
+    expect(roster.length).toBeGreaterThan(0);
+
+    const user = resolve(undefined);
+    expect(user?.uid).toBe(roster[0]?.id);
+    expect(user?.['role']).toBe(roster[0]?.role);
+
+    resetMockDataService();
+  });
 });
