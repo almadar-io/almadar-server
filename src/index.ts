@@ -14,6 +14,11 @@
 // Lib exports
 export { env } from './lib/env.js';
 export { logger } from './lib/logger.js';
+export {
+  validateIntegrationEnv,
+  integrationHealthChecks,
+  type IntegrationHealthCheck,
+} from './lib/integrationEnv.js';
 // Namespaced structured logger — same shape as the runtime + UI loggers.
 // Generated server handlers use this for the persist/emit hot path so the
 // `[almadar:server:effects]` lines show up in the verifier's `[almadar:*]`
@@ -194,8 +199,37 @@ export type {
   ServerServiceContracts,
 } from './contracts.js';
 
+// Push (Web Push server surface — key endpoint + shared service worker)
+export {
+  vapidPublicKey,
+  PUSH_SERVICE_WORKER_SOURCE,
+  PUSH_SERVICE_WORKER_PATH,
+} from './lib/push.js';
+
 // Route exports
 export async function observabilityRouter(): Promise<import('express').Router> {
   const m = await import('./routes/observability.js');
   return m.default;
 }
+
+export { pushRouter, pushServiceWorkerHandler } from './routes/push.js';
+
+// Report export (server-side Excel/PDF/CSV rendering — spec: exportable reports)
+export {
+  renderReport,
+  renderCsv,
+  renderXlsx,
+  renderPdf,
+  reportFilename,
+  REPORT_CONTENT_TYPES,
+} from './lib/reportExport.js';
+export type { ReportTable, ReportColumn, ReportCell, ReportFormat } from './lib/reportExport.js';
+
+// Inbound webhook ingress (mount OUTSIDE the authenticated /api scope)
+export { reportsRouter } from './routes/reports.js';
+export { createHooksRouter } from './routes/hooks.js';
+export type { HookProvider, HookProviderResult, HookDispatch, HooksRouterOptions } from './routes/hooks.js';
+
+// Tenant credential store persistence (W4) — Firestore rows for
+// @almadar/integrations' CredentialStore (structural contract, no dep edge)
+export { FirestoreCredentialPersistence } from './lib/credentials.js';

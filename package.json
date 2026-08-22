@@ -1,6 +1,6 @@
 {
   "name": "@almadar/server",
-  "version": "2.35.0",
+  "version": "2.36.0",
   "description": "Shared server infrastructure for Almadar applications",
   "type": "module",
   "main": "./dist/index.js",
@@ -48,7 +48,7 @@
     "prepare": "git config core.hooksPath .githooks"
   },
   "dependencies": {
-    "@almadar/core": "^10.64.0",
+    "@almadar/core": "^10.66.0",
     "@almadar/logger": "^1.11.0",
     "@faker-js/faker": "^9.3.0",
     "cors": "^2.8.5",
@@ -56,10 +56,12 @@
     "firebase-admin": "^14.2.0",
     "helmet": "^8.0.0",
     "ws": "^8.18.0",
-    "zod": "^3.24.0"
+    "zod": "^3.24.0",
+    "exceljs": "^4.4.0",
+    "pdfkit": "^0.15.2"
   },
   "peerDependencies": {
-    "@almadar-io/rabit": "^0.65.13",
+    "@almadar-io/rabit": "^0.65.14",
     "express": "^5.0.0"
   },
   "peerDependenciesMeta": {
@@ -83,7 +85,8 @@
     "vitest": "^2.1.0",
     "turbo": "^2.8.17",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "typescript": "npm:@typescript/typescript6@^6.0.2"
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "@types/pdfkit": "^0.13.9"
   },
   "repository": {
     "type": "git",

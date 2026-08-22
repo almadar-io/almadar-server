@@ -10,6 +10,7 @@
 
 import { createLogger } from '@almadar/logger';
 import { Router } from 'express';
+import { integrationHealthChecks } from '../lib/integrationEnv.js';
 
 const router: ReturnType<typeof Router> = Router();
 const obsLog = createLogger('almadar:server:routes:observability');
@@ -47,7 +48,10 @@ router.get('/metrics', async (_req, res) => {
  */
 router.get('/health', async (_req, res) => {
   try {
-    const health = [{ status: 'healthy', name: 'server', timestamp: Date.now() }];
+    const health = [
+      { status: 'healthy', name: 'server', detail: '', timestamp: Date.now() },
+      ...integrationHealthChecks(),
+    ];
     const allHealthy = health.every((h) => h.status === 'healthy');
 
     res.status(allHealthy ? 200 : 503).json({
