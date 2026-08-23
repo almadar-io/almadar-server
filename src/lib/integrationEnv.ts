@@ -52,6 +52,30 @@ function integrationsMocked(): boolean {
   );
 }
 
+function credentialsStoreFirst(): boolean {
+  return process.env.ALMADAR_CREDENTIALS_SOURCE === 'store';
+}
+
+let presenceProvider: ((envVar: string) => boolean) | null = null;
+
+/**
+ * Install a credential-presence provider (I-31 store-first mode): under
+ * store-first, declared refs resolve only through the tenant credential
+ * store, which this package deliberately cannot import (no integrations dep
+ * edge) — the host that installed the store supplies the predicate instead.
+ * Without one, store-first suppresses the env-missing boot warning (the env
+ * is seed data, not the source) and `/health` says so explicitly.
+ */
+export function setCredentialPresenceProvider(fn: ((envVar: string) => boolean) | null): void {
+  presenceProvider = fn;
+}
+
+function credentialPresent(envVar: string): boolean {
+  if (presenceProvider) return presenceProvider(envVar);
+  if (credentialsStoreFirst()) return false;
+  return Boolean(process.env[envVar]);
+}
+
 function missingRequiredByService(
   services: readonly string[],
 ): Array<{ service: string; envVar: string; description: string }> {
@@ -59,7 +83,7 @@ function missingRequiredByService(
   const missing: Array<{ service: string; envVar: string; description: string }> = [];
   for (const service of services) {
     for (const cred of registry[service] ?? []) {
-      if (cred.required && !process.env[cred.envVar]) {
+      if (cred.required && !credentialPresent(cred.envVar)) {
         missing.push({ service, envVar: cred.envVar, description: cred.description });
       }
     }
@@ -78,6 +102,15 @@ export function validateIntegrationEnv(services: readonly string[]): void {
   healthServices.splice(0, healthServices.length, ...services);
 
   if (services.length === 0 || integrationsMocked()) {
+    return;
+  }
+  // Store-first without a presence provider: the env is seed data, not the
+  // source — an env-presence check would false-alarm, so defer to /health.
+  if (credentialsStoreFirst() && !presenceProvider) {
+    integrationLog.info('store-first-credentials-mode', {
+      services: [...services],
+      detail: 'presence managed by the tenant credential store',
+    });
     return;
   }
 
@@ -114,6 +147,14 @@ export function integrationHealthChecks(): IntegrationHealthCheck[] {
       name: `integration:${service}`,
       status: 'degraded' as const,
       detail: 'mocked (ALMADAR_INTEGRATIONS_MODE=mock or USE_MOCK_DATA=true)',
+      timestamp: now,
+    }));
+  }
+  if (credentialsStoreFirst() && !presenceProvider) {
+    return healthServices.map((service) => ({
+      name: `integration:${service}`,
+      status: 'degraded' as const,
+      detail: 'store-first credentials — presence unknown to the server (no presence provider installed)',
       timestamp: now,
     }));
   }

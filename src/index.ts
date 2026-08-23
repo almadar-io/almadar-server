@@ -17,6 +17,7 @@ export { logger } from './lib/logger.js';
 export {
   validateIntegrationEnv,
   integrationHealthChecks,
+  setCredentialPresenceProvider,
   type IntegrationHealthCheck,
 } from './lib/integrationEnv.js';
 // Namespaced structured logger — same shape as the runtime + UI loggers.
