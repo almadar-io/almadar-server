@@ -23,13 +23,23 @@ import { env } from '../lib/env.js';
 import { logger } from '../lib/logger.js';
 
 /**
- * `ALMADAR_PERSONA_OWNS` — the columns that hold a user id, as `Entity.field`
- * pairs (`RosterEntry.memberId,Appointment.patientId`). Declared, never inferred
- * from a field name: a guess would silently scope the wrong column. Mirrors
- * `MockPersistenceConfig.ownerFields` on the interpreter path and
- * `OWNER_FIELDS_ENV` in the compiler's seeder.
+ * The columns that hold a user id. Declared, never inferred from a field name:
+ * a guess would silently scope the wrong column.
+ *
+ * Primary source is the schema's own `ownerFields`, which codegen derives from
+ * the declared `@read`/`@update`/`@delete` policy (`["==", ["object/get",
+ * "@entity","authorId"], "@user.id"]` names `authorId` outright). Relying on
+ * `ALMADAR_PERSONA_OWNS` alone was the bug: nothing in codegen, in a generated
+ * app, or in the verify harness ever set it, so this returned `[]` every time,
+ * the owner column fell through to a random relation pick, and every
+ * ownership-scoped list rendered "No items" while every request succeeded
+ * (§57). The env var stays as a manual override for fixtures with no compiled
+ * schema behind them, and mirrors `MockPersistenceConfig.ownerFields` on the
+ * interpreter path.
  */
-function ownerColumnsFor(entityName: string): string[] {
+function ownerColumnsFor(entityName: string, schema?: EntitySchema): string[] {
+  const declared = schema?.ownerFields ?? [];
+  if (declared.length > 0) return declared;
   const spec = process.env['ALMADAR_PERSONA_OWNS'];
   if (!spec) return [];
   const target = entityName.toLowerCase();
@@ -68,6 +78,13 @@ export interface EntitySchema {
   name?: string;
   /** `[identity]` — this collection's rows are the app's persona roster. */
   identity?: boolean;
+  /**
+   * The columns a declared `@read`/`@update`/`@delete` compares to `@user.id`,
+   * emitted by codegen off the policy the program already states. This is the
+   * primary source; `ALMADAR_PERSONA_OWNS` remains as a manual override for
+   * fixtures that have no compiled schema behind them.
+   */
+  ownerFields?: string[];
 }
 
 interface BaseEntity {
@@ -229,7 +246,8 @@ export class MockDataService {
     // interpreter path's entity-keyed `ownerFields`), but everything here is
     // keyed by collection — so matching the raw key made `Ticket.assignee` miss
     // `tickets`, and no generated app ever stamped an owner.
-    const ownerCols = ownerColumnsFor(this.schemas.get(normalized)?.name ?? entityName);
+    const schema = this.schemas.get(normalized);
+    const ownerCols = ownerColumnsFor(schema?.name ?? entityName, schema);
     const viewerId = this.seedViewerId();
 
     for (let i = 0; i < count; i++) {
