@@ -349,7 +349,11 @@ export class MockDataService {
    */
   create<T extends BaseEntity>(entityName: string, data: Partial<T>): T {
     const store = this.getStore(entityName);
-    const id = this.nextId(entityName);
+    const suppliedId = typeof data.id === 'string' && data.id.length > 0 ? data.id : undefined;
+    if (suppliedId && store.has(suppliedId)) {
+      throw new Error(`Entity ${entityName} with id ${suppliedId} already exists`);
+    }
+    const id = suppliedId ?? this.nextId(entityName);
     const now = new Date();
 
     const item = {
