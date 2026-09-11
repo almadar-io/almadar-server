@@ -17,7 +17,7 @@ import {
   type FieldValue,
   type UserContext,
 } from '@almadar/core';
-import { sampleFieldValue, sampleRowCount } from '@almadar/core/mock';
+import { linkSelfRelationField, sampleFieldValue, sampleRowCount } from '@almadar/core/mock';
 import { faker } from '@faker-js/faker';
 import { env } from '../lib/env.js';
 import { logger } from '../lib/logger.js';
@@ -260,6 +260,21 @@ export class MockDataService {
         for (const col of ownerCols) item[col] = viewerId;
       }
       store.set(item.id, item);
+    }
+
+    // `generateFieldValue`'s per-row random pick (above) draws a SELF-relation
+    // field's value from whatever's already in `store` mid-generation — the
+    // policy every other mock seeder in this repo rejected, since it leaves
+    // rows referenced by several others and nothing deletable under
+    // `onDelete: restrict`. Re-link every self-relation field, now that all
+    // rows exist, through the one shared forest (@almadar/core/mock).
+    const rows = Array.from(store.values()) as EntityRow[];
+    for (const field of fields) {
+      if (field.type !== 'relation' || !field.relation) continue;
+      if (this.collectionFor(field.relation.entity) !== normalized) continue;
+      linkSelfRelationField(rows, { name: field.name, cardinality: field.relation.cardinality }, (row) =>
+        Boolean(viewerId && ownerCols.includes(field.name) && row[field.name] === viewerId),
+      );
     }
   }
 
