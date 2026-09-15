@@ -23,6 +23,7 @@ import {
   type FirestoreSettings,
 } from 'firebase-admin/firestore';
 import { getAuth as adminGetAuth, type Auth } from 'firebase-admin/auth';
+import { getStorage as adminGetStorage, type Storage } from 'firebase-admin/storage';
 
 const dbLog = createLogger('almadar:server:db');
 
@@ -41,9 +42,15 @@ export function initializeFirebase(): App {
 
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
+  // Optional everywhere below: `getStorage().bucket()` (no explicit name)
+  // needs this wired at app-init time or it throws "Bucket name not
+  // specified" — Admin SDK does NOT infer it from `projectId` alone,
+  // verified against the Storage emulator 2026-09-15. Callers that never
+  // touch Storage are unaffected by it being unset.
+  const storageBucket = process.env.FIREBASE_STORAGE_BUCKET;
 
   if (emulatorHost) {
-    const app = initializeApp({ projectId: projectId || 'demo-project' });
+    const app = initializeApp({ projectId: projectId || 'demo-project', storageBucket });
     dbLog.info('Firebase Admin initialized for emulator', { emulatorHost });
     return app;
   }
@@ -54,6 +61,7 @@ export function initializeFirebase(): App {
     return initializeApp({
       credential: cert(serviceAccount),
       projectId,
+      storageBucket,
     });
   }
 
@@ -63,6 +71,7 @@ export function initializeFirebase(): App {
     return initializeApp({
       credential: cert({ projectId, clientEmail, privateKey: privateKey.replace(/\\n/g, '\n') }),
       projectId,
+      storageBucket,
     });
   }
 
@@ -70,6 +79,7 @@ export function initializeFirebase(): App {
     return initializeApp({
       credential: applicationDefault(),
       projectId,
+      storageBucket,
     });
   }
 
@@ -127,6 +137,10 @@ export function getFirestore(): Firestore {
 
 export function getAuth(): Auth {
   return adminGetAuth(getAppInstance());
+}
+
+export function getStorage(): Storage {
+  return adminGetStorage(getAppInstance());
 }
 
 export const db = new Proxy({} as Firestore, {

@@ -45,7 +45,7 @@ export {
 } from './lib/eventPersistence.js';
 export { debugEventsRouter } from './lib/debugRouter.js';
 export { personasRouter } from './lib/personasRouter.js';
-export { initializeFirebase, getFirestore, getAuth, db } from './lib/db.js';
+export { initializeFirebase, getFirestore, getAuth, getStorage, db } from './lib/db.js';
 export {
   setupEventBroadcast,
   getWebSocketServer,
