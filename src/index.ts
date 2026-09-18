@@ -100,6 +100,24 @@ export {
   resetSubstrateService,
   type SubstrateService,
 } from './services/substrate.js';
+export {
+  PostgresDataService,
+  type PostgresDataServiceOptions,
+  PostgresPersistence,
+  type PostgresPersistenceOptions,
+  ensureSchema,
+  diffSchema,
+  applySchemaEvolution,
+  type SchemaDiff,
+  type EvolutionPolicy,
+  type EvolutionReport,
+} from './services/postgres/index.js';
+export {
+  CouchDBDataService,
+  type CouchDBDataServiceOptions,
+  CouchDBPersistence,
+  type CouchDBPersistenceOptions,
+} from './services/couchdb/index.js';
 
 // Compat re-exports — generated project code imports these constant names.
 // They are now lazy getters; usage like `dataService.getById(...)` works

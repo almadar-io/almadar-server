@@ -1,0 +1,55 @@
+# Reference self-host stack for Almadar apps: app server + PostgreSQL + CouchDB.
+# Deploy anywhere docker-compose runs. Copy .env.example to .env first.
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.app
+    ports:
+      - "3030:3030"
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATA_BACKEND: ${DATA_BACKEND:-postgres}
+      DATABASE_URL: postgres://${PG_USER:-almadar}:${PG_PASSWORD:-almadar}@db:5432/${PG_DB:-almadar}
+      COUCHDB_URL: http://${COUCHDB_USER:-admin}:${COUCHDB_PASSWORD:-password}@couchdb:5984
+    depends_on:
+      db:
+        condition: service_healthy
+      couchdb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${PG_DB:-almadar}
+      POSTGRES_USER: ${PG_USER:-almadar}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-almadar}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  couchdb:
+    image: couchdb:3
+    environment:
+      COUCHDB_USER: ${COUCHDB_USER:-admin}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-password}
+    volumes:
+      - couchdata:/opt/couchdb/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://$${COUCHDB_USER}:$${COUCHDB_PASSWORD}@localhost:5984/_up || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  couchdata:

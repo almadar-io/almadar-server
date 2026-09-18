@@ -8,11 +8,15 @@
  */
 
 import type { StoreContract, StoreFilter, EntityRow, FieldValue } from '@almadar/core';
+import { Pool } from 'pg';
+import nano from 'nano';
 import { db } from '../lib/db.js';
 import { env } from '../lib/env.js';
 import { logger } from '../lib/logger.js';
 import { createLogger } from '@almadar/logger';
 import { getMockDataService, type FieldSchema } from './MockDataService.js';
+import { PostgresDataService } from './postgres/postgres-data-service.js';
+import { CouchDBDataService } from './couchdb/couchdb-data-service.js';
 
 const dataLog = createLogger('almadar:server:data');
 import {
@@ -484,6 +488,32 @@ function createDataService(): DataService {
     logger.warn('[DataService] USE_MOCK_DATA=true — serving in-memory mock rows, not the real data source');
     return new MockDataServiceAdapter();
   }
+  if (env.DATA_BACKEND === 'postgres') {
+    if (!env.DATABASE_URL) {
+      throw new Error(
+        '@almadar/server: DATA_BACKEND=postgres requires DATABASE_URL to be set',
+      );
+    }
+    logger.info('[DataService] Using PostgresDataService');
+    logger.info(
+      'Postgres adapter: hosts call ensureSchema + optionally applySchemaEvolution at boot for entity-field changes (additive by default; destructive requires policy.destructive + PG_MIGRATE_DESTRUCTIVE=apply)',
+    );
+    const pool = new Pool({
+      connectionString: env.DATABASE_URL,
+      ...(env.PGPOOL_MAX !== undefined ? { max: env.PGPOOL_MAX } : {}),
+    });
+    return new PostgresDataService({ pool });
+  }
+  if (env.DATA_BACKEND === 'couchdb') {
+    if (!env.COUCHDB_URL) {
+      throw new Error(
+        '@almadar/server: DATA_BACKEND=couchdb requires COUCHDB_URL to be set',
+      );
+    }
+    logger.info('[DataService] Using CouchDBDataService');
+    const client = nano(env.COUCHDB_URL);
+    return new CouchDBDataService({ client });
+  }
   logger.info('[DataService] Using FirebaseDataService');
   return new FirebaseDataService();
 }
@@ -516,10 +546,11 @@ export interface EntitySeedConfig {
 
 /**
  * Seed mock data for multiple entities.
- * Only works when USE_MOCK_DATA is enabled.
+ * Runs when USE_MOCK_DATA is enabled or when DATA_BACKEND=postgres/couchdb
+ * (dev fixture parity; the firebase path stays unseeded).
  */
 export function seedMockData(entities: EntitySeedConfig[]): void {
-  if (!env.USE_MOCK_DATA) {
+  if (!env.USE_MOCK_DATA && env.DATA_BACKEND !== 'postgres' && env.DATA_BACKEND !== 'couchdb') {
     logger.info('[DataService] Mock mode disabled, skipping seed');
     return;
   }
