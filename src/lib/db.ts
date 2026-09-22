@@ -90,6 +90,22 @@ export function initializeFirebase(): App {
   );
 }
 
+/**
+ * True iff SOME credential condition `initializeFirebase` accepts is present:
+ * an emulator host, a service-account file, or a bare projectId (the
+ * applicationDefault path). Pure env inspection — no side effects, never
+ * initializes anything; the local-dev routing in
+ * `@almadar-io/playground-runtime` uses it to decide Firestore vs. an
+ * in-memory shared store without paying `initializeFirebase`'s throw.
+ */
+export function isFirebaseConfigured(): boolean {
+  return Boolean(
+    process.env.FIRESTORE_EMULATOR_HOST ||
+      process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||
+      process.env.FIREBASE_PROJECT_ID,
+  );
+}
+
 function getAppInstance(): App {
   if (getApps().length === 0) {
     if (process.env.NODE_ENV !== 'production') {
