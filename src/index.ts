@@ -252,3 +252,10 @@ export type { HookProvider, HookProviderResult, HookDispatch, HooksRouterOptions
 // Tenant credential store persistence (W4) — Firestore rows for
 // @almadar/integrations' CredentialStore (structural contract, no dep edge)
 export { FirestoreCredentialPersistence } from './lib/credentials.js';
+export {
+  FirestorePendingGrantStore,
+  type FirestorePendingGrantStoreOptions,
+  type GrantFirestore,
+  type GrantDocRef,
+  type GrantTransaction,
+} from './lib/pendingGrants.js';
