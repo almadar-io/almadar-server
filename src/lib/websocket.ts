@@ -8,6 +8,7 @@
  */
 
 import { WebSocketServer, WebSocket, type RawData } from 'ws';
+import { isJsonObject, type JsonValue } from '@almadar/core';
 import type { Server, IncomingMessage } from 'http';
 import { getServerEventBus } from './eventBus.js';
 import { logger } from './logger.js';
@@ -40,7 +41,8 @@ export function setupEventBroadcast(server: Server, path: string = '/ws/events')
     return wss;
   }
 
-  wss = new WebSocketServer({ server, path });
+  // Frames of 1 KB and more are deflated for clients that negotiate RFC 7692.
+  wss = new WebSocketServer({ server, path, perMessageDeflate: { threshold: 1024 } });
 
   logger.info(`[WebSocket] Server listening at ${path}`);
 
@@ -61,11 +63,11 @@ export function setupEventBroadcast(server: Server, path: string = '/ws/events')
     // Handle client messages (for future bidirectional communication)
     ws.on('message', (data: RawData) => {
       try {
-        const message = JSON.parse(data.toString());
-        logger.debug(`[WebSocket] Received from ${clientId}:`, message);
+        const message: JsonValue = JSON.parse(data.toString());
+        logger.debug(`[WebSocket] Received from ${clientId}`, { message: JSON.stringify(message) });
 
-        // Handle client-to-server events if needed
-        if (message.type && message.payload) {
+        // Only an object payload is an event payload; anything else is dropped.
+        if (isJsonObject(message) && typeof message.type === 'string' && message.type !== '' && message.payload !== undefined && isJsonObject(message.payload)) {
           // Emit to server event bus with client source. BusEventSource
           // carries orbital/trait/transition/tick — the WebSocket entry
           // stamps `orbital: 'client'` and threads the client ID through

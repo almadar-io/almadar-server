@@ -15,3 +15,5 @@ export { validateBody, validateQuery, validateParams } from './validation';
 export { authenticateFirebase } from './authenticateFirebase.js';
 
 export { resolveDevIdentity } from './devIdentity.js';
+
+export { compressionMiddleware, compressionFilter } from './compression.js';

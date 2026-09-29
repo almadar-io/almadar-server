@@ -76,6 +76,7 @@ export {
 export { validateBody, validateQuery, validateParams } from './middleware/validation.js';
 export { authenticateFirebase } from './middleware/authenticateFirebase.js';
 export { resolveDevIdentity } from './middleware/devIdentity.js';
+export { compressionMiddleware, compressionFilter } from './middleware/compression.js';
 
 // Services exports
 export {
