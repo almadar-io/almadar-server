@@ -74,7 +74,7 @@ export {
   ConflictError,
 } from './middleware/errorHandler.js';
 export { validateBody, validateQuery, validateParams } from './middleware/validation.js';
-export { authenticateFirebase } from './middleware/authenticateFirebase.js';
+export { authenticateFirebase, authenticateFirebaseForTenant, authenticateBearer, type TenantOf, type AuthOutcome } from './middleware/authenticateFirebase.js';
 export { resolveDevIdentity } from './middleware/devIdentity.js';
 export { compressionMiddleware, compressionFilter } from './middleware/compression.js';
 
@@ -101,6 +101,16 @@ export {
   resetSubstrateService,
   type SubstrateService,
 } from './services/substrate.js';
+export {
+  FirestorePersistence,
+  firestoreRows,
+  type AdminFirestore,
+  type FirestorePersistenceOptions,
+  type RowFirestore,
+  type RowCollection,
+  type RowDoc,
+} from './services/firestore/firestore-persistence.js';
+export { observedPersistence, RowQuotaExceededError, type ObservedPersistenceOptions } from './services/observed-persistence.js';
 export {
   PostgresDataService,
   type PostgresDataServiceOptions,

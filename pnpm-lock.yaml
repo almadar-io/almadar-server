@@ -9,17 +9,14 @@ importers:
   .:
     dependencies:
       '@almadar/core':
-        specifier: ^10.110.0
-        version: 10.110.0
+        specifier: ^10.111.0
+        version: 10.111.0
       '@almadar/logger':
-        specifier: ^1.14.0
-        version: 1.14.0
+        specifier: ^1.15.0
+        version: 1.15.0
       '@almadar/runtime':
-        specifier: ^6.95.0
-        version: 6.95.0(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.4)(express@5.2.1)(ws@8.21.0)
-      '@faker-js/faker':
-        specifier: ^9.3.0
-        version: 9.9.0
+        specifier: ^6.96.0
+        version: 6.96.0(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.4)(express@5.2.1)(ws@8.21.0)
       compression:
         specifier: ^1.8.2
         version: 1.8.2
@@ -111,16 +108,16 @@ importers:
 
 packages:
 
-  '@almadar/core@10.110.0':
-    resolution: {integrity: sha512-bx+tbWZV4cwdAk6KiakilKKHaLuJML2P2PF+dDUc/H0OfZt7Y2uLdmr0P99ND+/FsWrlH8JCdW/KsicaJRrXMg==}
+  '@almadar/core@10.111.0':
+    resolution: {integrity: sha512-6fJgFRqOLCddrU44qCAZ5/m+DJG0lp5vEzQ7iAO0d8lAyzTlWhaxK78b8k35RZ3xXnsacsCNRPntTwMKrHHwGA==}
 
   '@almadar/eslint-plugin@2.20.0':
     resolution: {integrity: sha512-f3kUaZqFJYC38tL/FZxEel2cm//288/MbCYCykyHFtie33XHQPyVyocrjyP8XQsbt+SlZ22X3tzo313/y2yKIg==}
     peerDependencies:
       eslint: '>=8.0.0'
 
-  '@almadar/evaluator@2.51.0':
-    resolution: {integrity: sha512-kb9hu3p79aLsgdlEGCf75QNK0Uyst4jpUyxme7y0DNOLOxqyn2C2FObErzAxJCa8VDEWVsc9xqGm2xJA8uFfBA==}
+  '@almadar/evaluator@2.52.0':
+    resolution: {integrity: sha512-bkYu+VaLnQD5cGYVwk51KxJsMRXsyGiLebztDk9bMMiT5JWdRCPtnvjMo9+7jhQsVHFZfrgx3qoxPKtzlPCzxw==}
 
   '@almadar/integrations@2.39.0':
     resolution: {integrity: sha512-54KdFqQZS8gJPhopRLm9U7b8Xy0Deyxs0jcNjm/GmPhjC7qLGPKiO88jJcRChVbmF2ealsB6T7iMW94lnvBI6g==}
@@ -130,11 +127,11 @@ packages:
     peerDependencies:
       '@almadar/core': ^10.105.0
 
-  '@almadar/logger@1.14.0':
-    resolution: {integrity: sha512-3BgMBlUGDv7Aq3wlJUCDjGYTOBtJfDwe/nswZ0/GkN40prtGVCBx7Jy9ivgE6zrQxWkUQMQZJHn1RQHobhGOBQ==}
+  '@almadar/logger@1.15.0':
+    resolution: {integrity: sha512-N2ea4I+NQ/1ItDIu75zg1LZMZww8FkNUbx+DEgapKdQSc6XvIT56dh9YmKxXFbNDU5+M+oawo42m5M57CYcSWQ==}
 
-  '@almadar/runtime@6.95.0':
-    resolution: {integrity: sha512-2woO7LX00rnWejraP3AZkj+MoGVLCztXGisHrZxL2mrrzIjvjmZjM3cagGLjJYMp8irt2m6PndNMO9tuLMfO5A==}
+  '@almadar/runtime@6.96.0':
+    resolution: {integrity: sha512-Btow0u8TEQT6SQC82Ufir9Sai7jtnhLTd/sopFk7Pf1d7YhkonrgRobmXT7KbVz3xXqSlOpVwV3WfKcXrrMnEg==}
     engines: {node: '>=22.19.0'}
     peerDependencies:
       express: ^5.0.0
@@ -142,10 +139,10 @@ packages:
       express:
         optional: true
 
-  '@almadar/server@2.47.0':
-    resolution: {integrity: sha512-DpoQy0tlOJwvofVe2ywY5Mjxm/xMXi1TonjdDkf+mNIZsvLLM+h2Ho275c657dN4U029sQ0ZrCGQUxBnDL602w==}
+  '@almadar/server@2.48.0':
+    resolution: {integrity: sha512-UtjfT8gR07nySq78KS4UcZOEDO0arZGrgLSlMXcGHCmvbEmUt2aE2H1BwfuIC5VXDsVPQANKfTyO8k7+PXsT4w==}
     peerDependencies:
-      '@almadar-io/rabit': ^0.65.37
+      '@almadar-io/rabit': ^0.65.44
       express: ^5.0.0
     peerDependenciesMeta:
       '@almadar-io/rabit':
@@ -3448,7 +3445,7 @@ packages:
 
 snapshots:
 
-  '@almadar/core@10.110.0':
+  '@almadar/core@10.111.0':
     dependencies:
       zod: 3.25.76
 
@@ -3457,16 +3454,16 @@ snapshots:
       eslint: 10.0.0
       jsonc-eslint-parser: 3.1.0
 
-  '@almadar/evaluator@2.51.0':
+  '@almadar/evaluator@2.52.0':
     dependencies:
-      '@almadar/core': 10.110.0
+      '@almadar/core': 10.111.0
       '@almadar/std': 16.235.0
 
   '@almadar/integrations@2.39.0(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.4)(ws@8.21.0)':
     dependencies:
-      '@almadar/core': 10.110.0
-      '@almadar/llm': 2.56.0(@almadar/core@10.110.0)(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.4)(ws@8.21.0)
-      '@almadar/logger': 1.14.0
+      '@almadar/core': 10.111.0
+      '@almadar/llm': 2.56.0(@almadar/core@10.111.0)(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.4)(ws@8.21.0)
+      '@almadar/logger': 1.15.0
       '@aws-sdk/client-s3': 3.1141.0
       '@aws-sdk/s3-request-presigner': 3.1141.0
       '@sendgrid/mail': 8.1.6
@@ -3494,10 +3491,10 @@ snapshots:
       - supports-color
       - ws
 
-  '@almadar/llm@2.56.0(@almadar/core@10.110.0)(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.4)(ws@8.21.0)':
+  '@almadar/llm@2.56.0(@almadar/core@10.111.0)(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.4)(ws@8.21.0)':
     dependencies:
-      '@almadar/core': 10.110.0
-      '@almadar/logger': 1.14.0
+      '@almadar/core': 10.111.0
+      '@almadar/logger': 1.15.0
       '@anthropic-ai/sdk': 0.52.0
       '@langchain/anthropic': 1.5.11(@langchain/core@1.2.12(@opentelemetry/api@1.9.1)(openai@6.49.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(ws@8.21.0)(zod@3.25.76))(ws@8.21.0))
       '@langchain/core': 1.2.12(@opentelemetry/api@1.9.1)(openai@6.49.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(ws@8.21.0)(zod@3.25.76))(ws@8.21.0)
@@ -3515,17 +3512,17 @@ snapshots:
       - '@smithy/signature-v4'
       - ws
 
-  '@almadar/logger@1.14.0':
+  '@almadar/logger@1.15.0':
     dependencies:
-      '@almadar/core': 10.110.0
+      '@almadar/core': 10.111.0
 
-  '@almadar/runtime@6.95.0(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.4)(express@5.2.1)(ws@8.21.0)':
+  '@almadar/runtime@6.96.0(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.4)(express@5.2.1)(ws@8.21.0)':
     dependencies:
-      '@almadar/core': 10.110.0
-      '@almadar/evaluator': 2.51.0
+      '@almadar/core': 10.111.0
+      '@almadar/evaluator': 2.52.0
       '@almadar/integrations': 2.39.0(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.4)(ws@8.21.0)
-      '@almadar/logger': 1.14.0
-      '@almadar/server': 2.47.0(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.4)(express@5.2.1)
+      '@almadar/logger': 1.15.0
+      '@almadar/server': 2.48.0(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.4)(express@5.2.1)
       '@almadar/std': 16.235.0
     optionalDependencies:
       express: 5.2.1
@@ -3547,12 +3544,13 @@ snapshots:
       - utf-8-validate
       - ws
 
-  '@almadar/server@2.47.0(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.4)(express@5.2.1)':
+  '@almadar/server@2.48.0(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.4)(express@5.2.1)':
     dependencies:
-      '@almadar/core': 10.110.0
-      '@almadar/logger': 1.14.0
-      '@almadar/runtime': 6.95.0(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.4)(express@5.2.1)(ws@8.21.0)
+      '@almadar/core': 10.111.0
+      '@almadar/logger': 1.15.0
+      '@almadar/runtime': 6.96.0(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.4)(express@5.2.1)(ws@8.21.0)
       '@faker-js/faker': 9.9.0
+      compression: 1.8.2
       cors: 2.8.6
       dotenv: 16.6.1
       exceljs: 4.4.0
@@ -3582,7 +3580,7 @@ snapshots:
 
   '@almadar/std@16.235.0':
     dependencies:
-      '@almadar/core': 10.110.0
+      '@almadar/core': 10.111.0
 
   '@anthropic-ai/sdk@0.122.0(zod@3.25.76)':
     dependencies:

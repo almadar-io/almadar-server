@@ -1,9 +1,8 @@
 /**
  * The compiled path's persona roster — live `[identity]` rows, not a re-derivation.
  *
- * Three seeders mint three different id schemes for the same entity (`Person-N`
- * in the Rust roster, `mock-people-N` here, `Person Id N` on the interpreter
- * path). A viewer whose id is not literally one of these rows owns nothing, so
+ * The Rust roster mints `Person-N` while the shared mock store mints `Person Id N`. A viewer
+ * whose id is not literally one of the stored rows owns nothing, so
  * every ownership-scoped list renders empty — indistinguishable from a working
  * filter over no data. These tests pin that the roster and the resolved viewer
  * both come from the rows that actually exist.
@@ -124,5 +123,23 @@ describe('ALMADAR_PERSONA resolves against the roster', () => {
     // A bare role used to throw against the hardcoded empty roster, leaving
     // every row unowned; the viewer now owns every other row.
     expect(owned.length).toBeGreaterThan(0);
+  });
+});
+
+describe('every persona carries its role', () => {
+  it('an optional role on the [identity] entity is filled on every roster row', () => {
+    const optionalRole = PERSON_FIELDS.map((f) => (f.name === 'role' ? { ...f, required: false } : f));
+    const service = new MockDataService();
+    service.registerSchema('people', { name: 'Person', identity: true, fields: optionalRole });
+    service.seed('people', optionalRole, 6);
+    expect(service.getIdentityRoster().every((p) => typeof p.role === 'string' && p.role.length > 0)).toBe(true);
+  });
+
+  it('control: the same optional field on an ordinary entity is left unset on even rows', () => {
+    const optionalRole = PERSON_FIELDS.map((f) => (f.name === 'role' ? { ...f, required: false } : f));
+    const service = new MockDataService();
+    service.registerSchema('people', { name: 'Person', fields: optionalRole });
+    service.seed('people', optionalRole, 6);
+    expect(service.list<{ role?: string }>('people').filter((r) => r.role === undefined)).toHaveLength(3);
   });
 });

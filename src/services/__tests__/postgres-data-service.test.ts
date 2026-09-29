@@ -52,18 +52,15 @@ function queryResult(rows: object[], rowCount = rows.length) {
 }
 
 describe('PostgresDataService.create', () => {
-  it('honors a supplied non-empty string id and returns the full row with timestamps', async () => {
+  it('honors a supplied non-empty string id and returns the entity with timestamps', async () => {
     const service = makeService();
-    queryMock.mockResolvedValue(
-      queryResult([{ id: 'task-1', title: 'T', createdAt: new Date('2026-01-01'), updatedAt: new Date('2026-01-01') }]),
-    );
+    queryMock.mockResolvedValue(queryResult([], 1));
     const row = await service.create<Task>('Task', { id: 'task-1', title: 'T' });
-    expect(row.id).toBe('task-1');
+    expect(row).toMatchObject({ id: 'task-1', title: 'T' });
     expect(row.createdAt).toBeInstanceOf(Date);
     expect(row.updatedAt).toBeInstanceOf(Date);
     const [sql, params] = queryMock.mock.calls[0];
     expect(sql).toContain('INSERT INTO "tasks"');
-    expect(sql).toContain('RETURNING *');
     expect(params).toContain('task-1');
   });
 
@@ -79,33 +76,36 @@ describe('PostgresDataService.create', () => {
 
   it('mints a uuid when no id is supplied', async () => {
     const service = makeService();
-    queryMock.mockResolvedValue(queryResult([{ id: 'minted' }]));
-    await service.create<Task>('Task', { title: 'No id' });
-    const params = queryMock.mock.calls[0][1];
-    expect(params).toHaveLength(4); // title, id, createdAt, updatedAt
-    expect(params[1]).toMatch(/^[0-9a-f-]{36}$/);
+    queryMock.mockResolvedValue(queryResult([], 1));
+    const row = await service.create<Task>('Task', { title: 'No id' });
+    const params: unknown[] = queryMock.mock.calls[0][1];
+    expect(params).toHaveLength(4); // title, createdAt, updatedAt, id
+    expect(row.id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(params).toContain(row.id);
   });
 });
 
 describe('PostgresDataService.update', () => {
-  it('returns null when no row matches', async () => {
+  it('returns null when no row matches, and writes nothing', async () => {
     const service = makeService();
     queryMock.mockResolvedValue(queryResult([], 0));
     const result = await service.update<Task>('Task', 'missing', { title: 'X' });
     expect(result).toBeNull();
+    expect(queryMock).toHaveBeenCalledTimes(1);
+    expect(queryMock.mock.calls[0][0]).toContain('SELECT');
   });
 
-  it('issues UPDATE ... WHERE id RETURNING * and refreshes updatedAt', async () => {
+  it('reads the row, then issues UPDATE ... WHERE id with a refreshed updatedAt', async () => {
     const service = makeService();
-    queryMock.mockResolvedValue(
-      queryResult([{ id: 'task-1', title: 'New', createdAt: new Date(), updatedAt: new Date() }]),
-    );
+    queryMock
+      .mockResolvedValueOnce(queryResult([{ id: 'task-1', title: 'Old', createdAt: new Date('2026-01-01'), updatedAt: new Date('2026-01-01') }]))
+      .mockResolvedValueOnce(queryResult([], 1));
     const result = await service.update<Task>('Task', 'task-1', { title: 'New' });
-    expect(result?.id).toBe('task-1');
-    const [sql, params] = queryMock.mock.calls[0];
+    expect(result).toMatchObject({ id: 'task-1', title: 'New' });
+    expect(result && result.updatedAt.getTime()).toBeGreaterThan(new Date('2026-01-01').getTime());
+    const [sql, params] = queryMock.mock.calls[1];
     expect(sql).toContain('UPDATE "tasks" SET');
     expect(sql).toContain('WHERE "id" = $');
-    expect(sql).toContain('RETURNING *');
     expect(params?.[params.length - 1]).toBe('task-1');
   });
 });
@@ -113,14 +113,18 @@ describe('PostgresDataService.update', () => {
 describe('PostgresDataService.delete', () => {
   it('returns true when a row was deleted', async () => {
     const service = makeService();
-    queryMock.mockResolvedValue(queryResult([], 1));
+    queryMock
+      .mockResolvedValueOnce(queryResult([{ id: 'task-1' }], 1))
+      .mockResolvedValueOnce(queryResult([], 1));
     expect(await service.delete('Task', 'task-1')).toBe(true);
+    expect(queryMock.mock.calls[1][0]).toContain('DELETE FROM "tasks"');
   });
 
-  it('returns false on a miss', async () => {
+  it('returns false on a miss, and deletes nothing', async () => {
     const service = makeService();
     queryMock.mockResolvedValue(queryResult([], 0));
     expect(await service.delete('Task', 'missing')).toBe(false);
+    expect(queryMock).toHaveBeenCalledTimes(1);
   });
 });
 

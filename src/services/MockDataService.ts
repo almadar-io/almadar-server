@@ -1,8 +1,9 @@
 /**
- * MockDataService - In-memory data store with faker-based mock generation
- *
- * Provides a stateful mock data layer that supports all CRUD operations.
- * Uses @faker-js/faker for realistic data generation based on field types.
+ * MockDataService - the compiled apps' mock data API (collection-keyed, synchronous; generated
+ * `seedMockData.ts` calls it without awaiting) over the runtime's `MockPersistenceAdapter`, the one
+ * mock store both execution paths seed from: same PRNG, same ids, same relation and owner linking.
+ * What stays here is the compiled path's own inputs: collection → entity naming, owner columns
+ * from the schema or `ALMADAR_PERSONA_OWNS`, and the viewer from `ALMADAR_PERSONA`.
  *
  * @packageDocumentation
  */
@@ -14,13 +15,17 @@ import {
   type EntityField,
   type EntityPersistence,
   type EntityRow,
-  type FieldValue,
+  type OrbitalSchema,
+  type SExpr,
   type UserContext,
 } from '@almadar/core';
-import { linkSelfRelationField, sampleFieldValue, sampleRowCount } from '@almadar/core/mock';
-import { faker } from '@faker-js/faker';
+import type { PersistenceAdapter } from '@almadar/runtime';
+import { MockPersistenceAdapter } from '@almadar/runtime/mockPersistence';
+import { checkMutationAccess } from '@almadar/runtime/entityAccess';
+import { entityAccessPoliciesByStoreKey, ownerFieldsFromSchema } from '@almadar/core/mock';
 import { env } from '../lib/env.js';
 import { logger } from '../lib/logger.js';
+import { reviveTimestamps } from './data/timestamps.js';
 
 /**
  * The columns that hold a user id. Declared, never inferred from a field name:
@@ -51,9 +56,6 @@ function ownerColumnsFor(entityName: string, schema?: EntitySchema): string[] {
     .filter((field): field is string => Boolean(field));
 }
 
-/** Reference `now` for seeded rows, matching the interpreted path's anchor. */
-const SEED_REFERENCE_TIMESTAMP = '2024-01-01T00:00:00.000Z';
-
 // ============================================================================
 // Types
 // ============================================================================
@@ -80,11 +82,16 @@ export interface EntitySchema {
   identity?: boolean;
   /**
    * The columns a declared `@read`/`@update`/`@delete` compares to `@user.id`,
-   * emitted by codegen off the policy the program already states. This is the
-   * primary source; `ALMADAR_PERSONA_OWNS` remains as a manual override for
-   * fixtures that have no compiled schema behind them.
+   * emitted by older codegen. Current codegen emits the directives themselves
+   * (below) and owner columns are derived from them; `ALMADAR_PERSONA_OWNS`
+   * remains as a manual override for fixtures with no compiled schema behind them.
    */
   ownerFields?: string[];
+  /** The entity's declared access directives, as the resolved schema states them. */
+  readPolicy?: SExpr;
+  createPolicy?: SExpr;
+  updatePolicy?: SExpr;
+  deletePolicy?: SExpr;
 }
 
 interface BaseEntity {
@@ -97,46 +104,63 @@ interface BaseEntity {
 // MockDataService
 // ============================================================================
 
-/**
- * In-memory mock data store with CRUD operations and faker-based seeding.
- */
+type MockRow = BaseEntity & EntityRow;
+
+/** Rows are stored as `EntityRow`; callers name their shape. The one boundary between the two. */
+function asEntity<T>(row: EntityRow): T {
+  return row as T;
+}
+
+function asRow<T extends object>(value: T): EntityRow {
+  const row: EntityRow = {};
+  for (const [key, field] of Object.entries(value)) {
+    const v: EntityRow[string] = field;
+    if (v !== undefined) row[key] = v;
+  }
+  return row;
+}
+
 export class MockDataService {
-  private stores: Map<string, Map<string, unknown>> = new Map();
-  private schemas: Map<string, EntitySchema> = new Map();
-  private idCounters: Map<string, number> = new Map();
+  private readonly store: MockPersistenceAdapter;
+  /** Registered entities by lowercased name, in registration order. */
+  private entities: Map<string, { collection: string; schema: EntitySchema & { name: string } }> = new Map();
+  /** Lowercased collection -> the first entity registered on it. */
+  private collectionEntity: Map<string, string> = new Map();
+  /** The viewer seeded rows are stamped for, resolved against the live roster. */
+  private viewer: UserContext | undefined;
 
   constructor() {
-    // Set seed for deterministic generation if provided
-    if (env.MOCK_SEED !== undefined) {
-      faker.seed(env.MOCK_SEED);
-      logger.info(`[Mock] Using seed: ${env.MOCK_SEED}`);
-    }
+    this.store = new MockPersistenceAdapter(env.MOCK_SEED !== undefined ? { seed: env.MOCK_SEED } : {});
+    if (env.MOCK_SEED !== undefined) logger.info(`[Mock] Using seed: ${env.MOCK_SEED}`);
   }
 
-  // ============================================================================
-  // Store Management
-  // ============================================================================
-
-  /**
-   * Initialize store for an entity.
-   */
-  private getStore(entityName: string): Map<string, unknown> {
-    const normalized = entityName.toLowerCase();
-    if (!this.stores.has(normalized)) {
-      this.stores.set(normalized, new Map());
-      this.idCounters.set(normalized, 0);
-    }
-    return this.stores.get(normalized)!;
+  /** The entity a key names: a registered entity name, or a collection's first entity. */
+  private entityOf(key: string): string {
+    const lower = key.toLowerCase();
+    return this.entities.get(lower)?.schema.name ?? this.collectionEntity.get(lower) ?? key;
   }
 
-  /**
-   * Generate next ID for an entity.
-   */
-  private nextId(entityName: string): string {
-    const normalized = entityName.toLowerCase();
-    const counter = (this.idCounters.get(normalized) ?? 0) + 1;
-    this.idCounters.set(normalized, counter);
-    return `mock-${normalized}-${counter}`;
+  /** The registered entities as an `OrbitalSchema`, so owner columns and access policies come
+   *  from the same functions the runtime uses (`ownerFieldsFromSchema`, `entityAccessPoliciesByStoreKey`). */
+  private registeredSchema(): OrbitalSchema {
+    return {
+      name: 'mock-seed',
+      orbitals: [...this.entities.values()].map(({ collection, schema }) => ({
+        name: schema.name,
+        entity: {
+          name: schema.name,
+          collection,
+          ...(schema.identity ? { identity: true } : {}),
+          fields: schema.fields,
+          ...(schema.readPolicy !== undefined ? { read_policy: schema.readPolicy } : {}),
+          ...(schema.createPolicy !== undefined ? { create_policy: schema.createPolicy } : {}),
+          ...(schema.updatePolicy !== undefined ? { update_policy: schema.updatePolicy } : {}),
+          ...(schema.deletePolicy !== undefined ? { delete_policy: schema.deletePolicy } : {}),
+        },
+        traits: [],
+        pages: [],
+      })),
+    };
   }
 
   // ============================================================================
@@ -144,29 +168,13 @@ export class MockDataService {
   // ============================================================================
 
   /**
-   * Register an entity schema, keyed by collection (the key every store,
-   * `seed` call and route uses on this path).
+   * Register an entity schema under its collection (the key generated calls use).
+   * Entities sharing a collection each register; the first names the store.
    */
-  registerSchema(entityName: string, schema: EntitySchema): void {
-    this.schemas.set(entityName.toLowerCase(), schema);
-  }
-
-  /**
-   * The store key for a declared entity NAME.
-   *
-   * Stores are keyed by collection here, so `assignee : Person` against
-   * `entity Person [persistent: people]` must resolve `Person` → `people`. The
-   * old direct `Person`→`person` lookup always missed, so every relation column
-   * seeded as `null` and every ownership-scoped view was empty regardless of
-   * viewer. Falls back to the lowercased name for entities whose collection is
-   * their name.
-   */
-  private collectionFor(entityName: string): string {
-    const target = entityName.toLowerCase();
-    for (const [collection, schema] of this.schemas) {
-      if (schema.name?.toLowerCase() === target) return collection;
-    }
-    return target;
+  registerSchema(collection: string, schema: EntitySchema): void {
+    const name = schema.name ?? collection;
+    this.entities.set(name.toLowerCase(), { collection, schema: { ...schema, name } });
+    if (!this.collectionEntity.has(collection.toLowerCase())) this.collectionEntity.set(collection.toLowerCase(), name);
   }
 
   /**
@@ -175,274 +183,125 @@ export class MockDataService {
    * never inferred from a collection name.
    */
   getIdentityCollection(): string | undefined {
-    for (const [collection, schema] of this.schemas) {
+    for (const { collection, schema } of this.entities.values()) {
       if (schema.identity === true) return collection;
     }
     return undefined;
   }
 
   /**
-   * The app's persona roster: the LIVE seeded rows of its `[identity]` entity.
-   *
-   * Live rows rather than a re-derivation, because the three seeders mint three
-   * different id schemes (`Person-N` in the Rust roster, `mock-people-N` here,
-   * `Person Id N` on the interpreter path). A persona whose id is not literally
-   * one of these rows owns nothing, and every ownership-scoped list renders
-   * empty — indistinguishable from a working filter over no data.
+   * The app's persona roster: the LIVE seeded rows of its `[identity]` entity,
+   * so every persona id is literally a stored row id.
    *
    * Twin of `OrbitalServerRuntime.getIdentityRoster()` on the interpreter path.
    */
   getIdentityRoster(): UserContext[] {
     const collection = this.getIdentityCollection();
     if (!collection) return [];
-    return this.list<Record<string, FieldValue | undefined>>(collection)
+    return this.list<EntityRow>(collection)
       .map((row) => personaFromIdentityRow(row))
       .filter((persona): persona is UserContext => persona !== undefined);
   }
 
   /**
-   * The seeded viewer named by `ALMADAR_PERSONA`, if any.
-   *
-   * Resolves a bare id/role against the live roster above, so the viewer is
-   * literally one of the seeded rows. Before Increment 4 this passed an empty
-   * roster, so every bare spec threw and rows were left unowned — a generated
-   * app could not be booted as a named persona at all.
+   * The seeded viewer named by `ALMADAR_PERSONA`, resolved against the live
+   * roster; without a spec, the first declared persona (deterministic roster
+   * order), exactly as the compiled path's `render_probe.rs` does.
    */
-  private seedViewerId(): string | undefined {
+  private seedViewer(): UserContext | undefined {
     const roster = this.getIdentityRoster();
     const spec = process.env['ALMADAR_PERSONA'];
-    // No spec is not "nobody": an app declaring an [identity] roster has no
-    // anonymous viewer, and stamping nothing leaves every owner column empty, so
-    // every ownership-scoped @read matches zero rows and the app renders empty
-    // tables that look identical to a broken filter. Fall back to the FIRST
-    // declared persona — deterministic roster order, never a ranking of roles —
-    // exactly as the compiled path already does in
-    // `orbital-client/src/render_probe.rs` (`seed_sample_as` with the same id).
-    if (!spec) return resolveDefaultViewer(roster).id;
+    if (!spec) return resolveDefaultViewer(roster);
     try {
-      return resolvePersonaSpec(spec, roster).id;
+      return resolvePersonaSpec(spec, roster);
     } catch (error) {
       logger.warn(`[Mock] ALMADAR_PERSONA unresolved, rows left unowned: ${String(error)}`);
       return undefined;
     }
   }
 
+  /** The `@create` owner gate, as the runtime installs it: a viewer only owns rows it may create. */
+  private installOwnerGate(schema: OrbitalSchema): void {
+    const policiesByStore = entityAccessPoliciesByStoreKey(schema);
+    this.store.setOwnerGate((storeKey, candidateRow) => {
+      const user = this.viewer;
+      if (!user) return true;
+      return checkMutationAccess(candidateRow, policiesByStore.get(storeKey)?.create, { user });
+    });
+    this.store.setOwnerCandidateGate((storeKey, candidateRow, identityRow) => {
+      const persona = personaFromIdentityRow(identityRow);
+      if (!persona) return false;
+      return checkMutationAccess(candidateRow, policiesByStore.get(storeKey)?.create, { user: persona });
+    });
+  }
+
   /**
-   * Seed an entity with mock data.
+   * Seed an entity through the shared store. `key` is the entity name (a collection
+   * still resolves to its first entity). The viewer owns every other row of each owner
+   * column the gate lets it create; a store that already holds rows is backfilled.
    */
   seed(
-    entityName: string,
+    key: string,
     fields: FieldSchema[],
-    requested: number = 10,
+    requested: number = 6,
     persistence?: EntityPersistence,
   ): void {
-    const store = this.getStore(entityName);
-    const normalized = entityName.toLowerCase();
-    const count = sampleRowCount({ name: entityName, persistence, fields }, requested);
-
-    logger.info(`[Mock] Seeding ${count} ${entityName}...`);
-
-    // `ALMADAR_PERSONA_OWNS` names `Entity.field` pairs (mirroring the
-    // interpreter path's entity-keyed `ownerFields`), but everything here is
-    // keyed by collection — so matching the raw key made `Ticket.assignee` miss
-    // `tickets`, and no generated app ever stamped an owner.
-    const schema = this.schemas.get(normalized);
-    const ownerCols = ownerColumnsFor(schema?.name ?? entityName, schema);
-    const viewerId = this.seedViewerId();
-
-    for (let i = 0; i < count; i++) {
-      const item = this.generateMockItem(normalized, fields, i + 1, persistence);
-      // Give the viewer every other row of each DECLARED owner column, so an
-      // ownership-scoped view ("only my bookings") has real data while a second
-      // persona still sees a different, non-empty set. Against rows that never
-      // mention the viewer, a working filter and a broken one both render empty.
-      if (viewerId && ownerCols.length > 0 && i % 2 === 0) {
-        for (const col of ownerCols) item[col] = viewerId;
-      }
-      store.set(item.id, item);
-    }
-
-    // `generateFieldValue`'s per-row random pick (above) draws a SELF-relation
-    // field's value from whatever's already in `store` mid-generation — the
-    // policy every other mock seeder in this repo rejected, since it leaves
-    // rows referenced by several others and nothing deletable under
-    // `onDelete: restrict`. Re-link every self-relation field, now that all
-    // rows exist, through the one shared forest (@almadar/core/mock).
-    const rows = Array.from(store.values()) as EntityRow[];
-    for (const field of fields) {
-      if (field.type !== 'relation' || !field.relation) continue;
-      if (this.collectionFor(field.relation.entity) !== normalized) continue;
-      linkSelfRelationField(rows, { name: field.name, cardinality: field.relation.cardinality }, (row) =>
-        Boolean(viewerId && ownerCols.includes(field.name) && row[field.name] === viewerId),
-      );
-    }
-  }
-
-  /**
-   * Generate a single mock item based on field schemas.
-   */
-  private generateMockItem(
-    entityName: string,
-    fields: FieldSchema[],
-    index: number,
-    persistence?: EntityPersistence,
-  ): BaseEntity & EntityRow {
-    const id = this.nextId(entityName);
-    // Anchored, not wallclock: a moving `updatedAt` made every row read as
-    // "changed" between frames and disagreed with the interpreted path's rows.
-    const item: EntityRow = {
-      id,
-      createdAt: faker.date.past({ years: 1 }),
-      updatedAt: new Date(SEED_REFERENCE_TIMESTAMP),
-    };
-
-    for (const field of fields) {
-      if (field.name === 'id' || field.name === 'createdAt' || field.name === 'updatedAt') {
-        continue;
-      }
-      const value = this.generateFieldValue(entityName, field, index, persistence);
-      if (value !== undefined) {
-        item[field.name] = value;
-      }
-    }
-
-    return item as BaseEntity & EntityRow;
-  }
-
-  /**
-   * Generate a mock value for a field.
-   *
-   * The policy lives in `@almadar/core/mock`; only the store-aware relation
-   * lookup is local, because resolving a real sibling id needs this instance's
-   * stores. The old 20% `Math.random()` field-drop is gone: it was unseeded, so
-   * it fired non-deterministically on essentially every field (`required` is
-   * emitted only for `name : string!`), which made this path disagree with every
-   * other seeder on every row.
-   */
-  private generateFieldValue(
-    entityName: string,
-    field: FieldSchema,
-    index: number,
-    persistence?: EntityPersistence,
-  ): FieldValue | undefined {
-    if (field.type === 'relation') {
-      const related = field.relation?.entity;
-      if (related) {
-        const relatedStore = this.stores.get(this.collectionFor(related));
-        if (relatedStore && relatedStore.size > 0) {
-          return faker.helpers.arrayElement(Array.from(relatedStore.keys()));
-        }
-      }
-      return null;
-    }
-    return sampleFieldValue(field, { entityName, index, strategy: 'seeded', persistence });
+    const entity = this.entityOf(key);
+    const registered = this.entities.get(entity.toLowerCase());
+    const collection = registered?.collection ?? key;
+    const schema = this.registeredSchema();
+    const legacyOwners = ownerColumnsFor(entity, registered?.schema).map((col) => `${entity}.${col}`);
+    this.store.addOwnerFields([...ownerFieldsFromSchema(schema), ...legacyOwners]);
+    this.installOwnerGate(schema);
+    this.viewer = this.seedViewer();
+    this.store.restampOwner(this.viewer?.id);
+    this.store.registerEntity(
+      { name: entity, collection, fields, ...(persistence ? { persistence } : {}), ...(registered?.schema.identity ? { identity: true } : {}) },
+      requested,
+    );
+    logger.info(`[Mock] Seeded ${this.store.count(entity)} ${entity}`);
   }
 
   // ============================================================================
   // CRUD Operations
   // ============================================================================
 
-  /**
-   * List all items of an entity.
-   */
   list<T>(entityName: string): T[] {
-    const store = this.getStore(entityName);
-    return Array.from(store.values()) as T[];
+    return this.store.rowsOf(this.entityOf(entityName)).map((row) => asEntity<T>(row));
   }
 
-  /**
-   * Get a single item by ID.
-   */
   getById<T>(entityName: string, id: string): T | null {
-    const store = this.getStore(entityName);
-    const item = store.get(id);
-    return (item as T) ?? null;
+    const row = this.store.rowOf(this.entityOf(entityName), id);
+    return row === null ? null : asEntity<T>(row);
   }
 
-  /**
-   * Create a new item.
-   */
-  create<T extends BaseEntity>(entityName: string, data: Partial<T>): T {
-    const store = this.getStore(entityName);
-    const suppliedId = typeof data.id === 'string' && data.id.length > 0 ? data.id : undefined;
-    if (suppliedId && store.has(suppliedId)) {
-      throw new Error(`Entity ${entityName} with id ${suppliedId} already exists`);
-    }
-    const id = suppliedId ?? this.nextId(entityName);
-    const now = new Date();
-
-    const item = {
-      ...data,
-      id,
-      createdAt: now,
-      updatedAt: now,
-    } as T;
-
-    store.set(id, item);
-    return item;
+  create<T extends BaseEntity = MockRow>(entityName: string, data: Partial<T>): T {
+    return asEntity<T>(this.store.insertRow(this.entityOf(entityName), asRow(data)));
   }
 
-  /**
-   * Update an existing item.
-   */
-  update<T extends BaseEntity>(entityName: string, id: string, data: Partial<T>): T | null {
-    const store = this.getStore(entityName);
-    const existing = store.get(id);
-
-    if (!existing) {
-      return null;
-    }
-
-    const updated = {
-      ...(existing as T),
-      ...data,
-      id, // Preserve original ID
-      updatedAt: new Date(),
-    } as T;
-
-    store.set(id, updated);
-    return updated;
+  update<T extends BaseEntity = MockRow>(entityName: string, id: string, data: Partial<T>): T | null {
+    const row = this.store.patchRow(this.entityOf(entityName), id, asRow(data));
+    return row === null ? null : asEntity<T>(row);
   }
 
-  /**
-   * Delete an item.
-   */
   delete(entityName: string, id: string): boolean {
-    const store = this.getStore(entityName);
-    if (!store.has(id)) {
-      return false;
-    }
-    store.delete(id);
-    return true;
+    return this.store.removeRow(this.entityOf(entityName), id);
   }
 
   // ============================================================================
   // Utilities
   // ============================================================================
 
-  /**
-   * Clear all data for an entity.
-   */
   clear(entityName: string): void {
-    const normalized = entityName.toLowerCase();
-    this.stores.delete(normalized);
-    this.idCounters.delete(normalized);
+    this.store.clear(this.entityOf(entityName));
   }
 
-  /**
-   * Clear all data.
-   */
   clearAll(): void {
-    this.stores.clear();
-    this.idCounters.clear();
+    this.store.clearAll();
   }
 
-  /**
-   * Get count of items for an entity.
-   */
   count(entityName: string): number {
-    const store = this.getStore(entityName);
-    return store.size;
+    return this.store.count(this.entityOf(entityName));
   }
 }
 
@@ -459,4 +318,39 @@ export function getMockDataService(): MockDataService {
 export function resetMockDataService(): void {
   _mockDataService?.clearAll();
   _mockDataService = null;
+}
+
+/** The mock data service as a `PersistenceAdapter`, so the mock DataService is the shared facade over it. */
+export class MockDataPersistence implements PersistenceAdapter {
+  /** A getter, so `resetMockDataService()` swaps the instance under a long-lived adapter. */
+  constructor(private readonly service: () => MockDataService) {}
+
+  private get mock(): MockDataService {
+    return this.service();
+  }
+
+  async create(entityType: string, data: EntityRow): Promise<{ id: string }> {
+    return { id: this.mock.create<MockRow>(entityType, data).id };
+  }
+
+  async update(entityType: string, id: string, data: EntityRow): Promise<void> {
+    this.mock.update<MockRow>(entityType, id, data);
+  }
+
+  async delete(entityType: string, id: string): Promise<void> {
+    this.mock.delete(entityType, id);
+  }
+
+  async getById(entityType: string, id: string): Promise<EntityRow | null> {
+    const row = this.mock.getById<EntityRow>(entityType, id);
+    return row === null ? null : reviveTimestamps(row);
+  }
+
+  async list(entityType: string): Promise<EntityRow[]> {
+    return this.mock.list<EntityRow>(entityType).map(reviveTimestamps);
+  }
+
+  async countRows(entityType: string): Promise<number> {
+    return this.mock.count(entityType);
+  }
 }

@@ -38,7 +38,7 @@ describe('MockDataService.create — id contract', () => {
   it('mints an id when the caller supplies none', () => {
     const service = new MockDataService();
     const row = service.create<Task>('Task', { title: 'No id supplied' });
-    expect(row.id).toBe('mock-task-1');
+    expect(row.id).toBe('Task Id 1');
     const fetched = service.getById<Task>('Task', row.id);
     expect(fetched).not.toBeNull();
   });

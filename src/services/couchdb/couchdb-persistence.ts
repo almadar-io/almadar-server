@@ -1,13 +1,15 @@
 /**
- * CouchDB implementation of PersistenceAdapter (the runtime effect-handler
- * storage contract) over the same client/databases as CouchDBDataService.
+ * CouchDB implementation of PersistenceAdapter: one database per entity type, schemaless docs.
+ * `query` pushes the Mango-expressible filters to `_find` and applies the rest in memory.
  */
-import type { RequestError } from 'nano';
+import type { MangoSelector, RequestError } from 'nano';
 import type { PersistenceAdapter } from '@almadar/runtime';
-import type { EntityRow } from '@almadar/core';
+import type { EntityRow, StoreFilter } from '@almadar/core';
+import { filterRows } from '../data/row-query.js';
 import {
   databaseNameFor,
   docToRow,
+  mangoOperatorFor,
   mintId,
   serializeRow,
   type CouchDBClient,
@@ -101,7 +103,7 @@ export class CouchDBPersistence implements PersistenceAdapter {
   async getById(entityType: string, id: string): Promise<EntityRow | null> {
     try {
       const doc = await this.dbFor(entityType).get(id);
-      return docToRow<EntityRow>(doc);
+      return docToRow(doc);
     } catch (error) {
       if (isNotFound(error)) return null;
       throw error;
@@ -113,6 +115,20 @@ export class CouchDBPersistence implements PersistenceAdapter {
     return result.rows
       .map((row) => row.doc)
       .filter((doc): doc is CouchDoc => doc !== undefined)
-      .map((doc) => docToRow<EntityRow>(doc));
+      .map((doc) => docToRow(doc));
+  }
+
+  async query(entityType: string, filters: readonly StoreFilter<EntityRow>[]): Promise<EntityRow[]> {
+    const selector: MangoSelector = {};
+    const remainder: StoreFilter<EntityRow>[] = [];
+    for (const filter of filters) {
+      const mangoOp = mangoOperatorFor(filter.op);
+      if (mangoOp && !(filter.field in selector)) selector[filter.field] = { [mangoOp]: filter.value };
+      else remainder.push(filter);
+    }
+    const rows = Object.keys(selector).length > 0
+      ? (await this.dbFor(entityType).find({ selector })).docs.map((doc) => docToRow(doc))
+      : await this.list(entityType);
+    return filterRows(rows, remainder);
   }
 }

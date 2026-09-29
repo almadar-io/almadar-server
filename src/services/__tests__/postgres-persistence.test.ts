@@ -112,3 +112,44 @@ describe('PostgresPersistence.getById / list', () => {
     expect(sql).toBe('SELECT * FROM "tasks"');
   });
 });
+
+describe('PostgresPersistence.query', () => {
+  it('pushes supported filters into SQL and deserializes rows', async () => {
+    queryMock.mockResolvedValue(queryResult([{ id: 'a' }, { id: 'b' }]));
+    const rows = await makeAdapter().query('Task', [
+      { field: 'title', op: 'contains', value: 'foo' },
+      { field: 'done', op: '==', value: true },
+      { field: 'tags', op: 'in', value: ['x', 'y'] },
+    ]);
+    expect(rows).toHaveLength(2);
+    const [sql, params] = queryMock.mock.calls[0];
+    expect(sql).toBe(`SELECT * FROM "tasks" WHERE "title"::text ILIKE '%' || $1 || '%' AND "done" = $2 AND "tags" = ANY($3)`);
+    expect(params).toEqual(['foo', true, ['x', 'y']]);
+  });
+
+  it('control: an operator SQL does not express (array-contains) is applied in memory, never dropped', async () => {
+    queryMock.mockResolvedValue(queryResult([{ id: 'a', tags: ['x'] }, { id: 'b', tags: ['y'] }]));
+    const rows = await makeAdapter().query('Task', [{ field: 'tags', op: 'array-contains', value: 'y' }]);
+    expect(rows.map((r) => r.id)).toEqual(['b']);
+    expect(queryMock.mock.calls[0][0]).toBe('SELECT * FROM "tasks"');
+  });
+});
+
+describe('PostgresPersistence.listPage', () => {
+  it('pages in SQL with a count query for the total', async () => {
+    queryMock
+      .mockResolvedValueOnce(queryResult([{ id: 'a' }, { id: 'b' }]))
+      .mockResolvedValueOnce(queryResult([{ total: 7 }]));
+    const page = await makeAdapter().listPage('Task', { page: 2, pageSize: 2, sortBy: 'title', sortOrder: 'desc' });
+    expect(page).toEqual({ rows: [{ id: 'a' }, { id: 'b' }], total: 7 });
+    expect(queryMock.mock.calls[0][0]).toContain('ORDER BY "title" DESC NULLS LAST LIMIT $1 OFFSET $2');
+    expect(queryMock.mock.calls[1]).toEqual(['SELECT COUNT(*)::int AS total FROM "tasks"', []]);
+  });
+
+  it('edge: a filter SQL does not express pages in memory so the total stays right', async () => {
+    queryMock.mockResolvedValue(queryResult([{ id: 'a', tags: ['x'] }, { id: 'b', tags: ['y'] }, { id: 'c', tags: ['y'] }]));
+    const page = await makeAdapter().listPage('Task', { page: 1, pageSize: 1, filters: [{ field: 'tags', op: 'array-contains', value: 'y' }] });
+    expect(page).toEqual({ rows: [{ id: 'b', tags: ['y'] }], total: 2 });
+    expect(queryMock).toHaveBeenCalledTimes(1);
+  });
+});

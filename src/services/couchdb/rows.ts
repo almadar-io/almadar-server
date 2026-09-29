@@ -1,12 +1,10 @@
 /**
- * Shared internals for the CouchDB adapters — database naming, id minting,
- * doc (de)serialization (Dates → ISO strings), the in-memory filter matrix,
- * and paginated search/sort/slice. Used by BOTH CouchDBDataService and
- * CouchDBPersistence (no duplication).
+ * CouchDB internals: database naming, id minting, doc (de)serialization (Dates → ISO strings)
+ * and the Mango operator mapping.
  */
 import type { MangoSelector } from 'nano';
 import type { EntityRow, FieldValue } from '@almadar/core';
-import type { PaginationOptions, PaginatedResult } from '../DataService.js';
+import { reviveTimestamps } from '../data/timestamps.js';
 
 // Database naming stays single-owned by the postgres rows module
 // (same deterministic entityType → name mapping, reused verbatim).
@@ -49,77 +47,14 @@ export function serializeRow(row: EntityRow): EntityRow {
 }
 
 /** CouchDB doc → row: strip _id/_rev, ISO timestamps back to Date. */
-export function docToRow<T extends object>(doc: CouchDoc): T {
+export function docToRow(doc: CouchDoc): EntityRow {
   const { _id: _docId, _rev: _docRev, ...rest } = doc;
-  for (const key of ['createdAt', 'updatedAt']) {
-    const value: unknown = Reflect.get(rest, key);
-    if (typeof value === 'string') Reflect.set(rest, key, new Date(value));
-  }
-  return rest as T;
-}
-
-export interface CouchFilter {
-  field: string;
-  op: string;
-  value: unknown;
-}
-
-/** In-memory filter matrix, mirroring DataService.applyFilterCondition + postgres 'contains'. */
-export function applyFilterCondition(value: unknown, operator: string, filterValue: unknown): boolean {
-  if (value === null || value === undefined) {
-    return operator === '!=' ? filterValue !== null : false;
-  }
-
-  switch (operator) {
-    case '==':
-      return value === filterValue;
-    case '!=':
-      return value !== filterValue;
-    case '>':
-      return (value as number) > (filterValue as number);
-    case '>=':
-      return (value as number) >= (filterValue as number);
-    case '<':
-      return (value as number) < (filterValue as number);
-    case '<=':
-      return (value as number) <= (filterValue as number);
-    case 'in':
-      return Array.isArray(filterValue) && filterValue.includes(value);
-    case 'not-in':
-      return Array.isArray(filterValue) && !filterValue.includes(value);
-    case 'contains':
-      return (
-        typeof value === 'string' &&
-        typeof filterValue === 'string' &&
-        value.toLowerCase().includes(filterValue.toLowerCase())
-      );
-    case 'array-contains':
-      return Array.isArray(value) && value.includes(filterValue);
-    case 'array-contains-any':
-      return (
-        Array.isArray(value) &&
-        Array.isArray(filterValue) &&
-        filterValue.some((v: unknown) => value.includes(v))
-      );
-    default:
-      return true;
-  }
-}
-
-export function applyFilters<T>(rows: T[], filters: readonly CouchFilter[]): T[] {
-  if (filters.length === 0) return rows;
-  return rows.filter((row) =>
-    filters.every((filter) => {
-      const value: unknown = Reflect.get(row as object, filter.field);
-      return applyFilterCondition(value, filter.op, filter.value);
-    }),
-  );
+  return reviveTimestamps(rest);
 }
 
 /**
- * Ops pushed into Mango `_find`; everything else (`contains`,
- * `array-contains`, `array-contains-any`, unknown ops) falls back to the
- * in-memory matrix in applyFilterCondition.
+ * Ops pushed into Mango `_find`; the rest (`contains`, `array-contains`, `array-contains-any`)
+ * are filtered in memory by `row-query`.
  */
 export function mangoOperatorFor(op: string): '$eq' | '$ne' | '$lt' | '$lte' | '$gt' | '$gte' | '$in' | '$nin' | null {
   switch (op) {
@@ -142,47 +77,4 @@ export function mangoOperatorFor(op: string): '$eq' | '$ne' | '$lt' | '$lte' | '
     default:
       return null;
   }
-}
-
-const rowField = (item: unknown, key: string): unknown => Reflect.get(item as object, key);
-
-/** Search + nulls-last sort + slice, mirroring MockDataServiceAdapter pagination semantics. */
-export function paginateRows<T>(rows: T[], options: PaginationOptions): PaginatedResult<T> {
-  const page = options.page ?? 1;
-  const pageSize = options.pageSize ?? 20;
-  const { search, searchFields, sortBy, sortOrder = 'asc' } = options;
-
-  let items = applyFilters(rows, (options.filters ?? []).map((f) => ({ field: f.field, op: f.operator, value: f.value })));
-
-  if (search && search.trim()) {
-    const searchLower = search.toLowerCase();
-    items = items.filter((item) => {
-      const keys = Object.keys(item as object);
-      const fieldsToSearch = searchFields || keys;
-      return fieldsToSearch.some((field) => {
-        const value = rowField(item, field);
-        if (value === null || value === undefined) return false;
-        return String(value).toLowerCase().includes(searchLower);
-      });
-    });
-  }
-
-  if (sortBy) {
-    items = [...items].sort((a, b) => {
-      const aVal = rowField(a, sortBy);
-      const bVal = rowField(b, sortBy);
-      if (aVal === bVal) return 0;
-      if (aVal === null || aVal === undefined) return 1;
-      if (bVal === null || bVal === undefined) return -1;
-      const comparison = aVal < bVal ? -1 : 1;
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
-  }
-
-  const total = items.length;
-  const totalPages = Math.ceil(total / pageSize);
-  const startIndex = (page - 1) * pageSize;
-  const data = items.slice(startIndex, startIndex + pageSize);
-
-  return { data, total, page, pageSize, totalPages };
 }

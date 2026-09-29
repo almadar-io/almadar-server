@@ -226,15 +226,8 @@ describe('CouchDBDataService.query', () => {
   });
 });
 
-describe('filter matrix (rows.applyFilterCondition)', () => {
-  it('supports array-contains / array-contains-any and treats unknown ops as permissive', async () => {
-    const { applyFilterCondition } = await import('../couchdb/rows.js');
-    expect(applyFilterCondition(['x', 'y'], 'array-contains', 'x')).toBe(true);
-    expect(applyFilterCondition(['x', 'y'], 'array-contains-any', ['z', 'y'])).toBe(true);
-    expect(applyFilterCondition('anything', 'bogus-op', 'zzz')).toBe(true);
-  });
-
-  it('filters listPaginated via the matrix (array-contains spelling)', async () => {
+describe('CouchDBDataService.listPaginated filters', () => {
+  it('filters with array-contains alongside a Mango-expressible op', async () => {
     await service.create<Task>('Task', { id: 'a', title: 'alpha', done: true, tags: ['x'] });
     await service.create<Task>('Task', { id: 'b', title: 'beta', done: false, tags: ['y'] });
     const result = await service.listPaginated<Task>('Task', {

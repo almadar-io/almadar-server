@@ -12,7 +12,7 @@ export {
 
 export { validateBody, validateQuery, validateParams } from './validation';
 
-export { authenticateFirebase } from './authenticateFirebase.js';
+export { authenticateFirebase, authenticateFirebaseForTenant, authenticateBearer, type TenantOf, type AuthOutcome } from './authenticateFirebase.js';
 
 export { resolveDevIdentity } from './devIdentity.js';
 

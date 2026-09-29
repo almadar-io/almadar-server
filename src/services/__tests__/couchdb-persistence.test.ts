@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { FieldValue } from '@almadar/core';
 import type { CouchDBClient, CouchDoc } from '../couchdb/rows.js';
 import { CouchDBPersistence } from '../couchdb/couchdb-persistence.js';
 
@@ -59,7 +60,15 @@ function makeClient() {
             offset: 0,
             rows: [...docs.values()].map((doc) => ({ id: doc._id, key: doc._id, value: { rev: doc._rev }, doc })),
           })),
-          find: vi.fn(async () => ({ docs: [], bookmark: 'done' })),
+          find: vi.fn(async ({ selector }: { selector: Record<string, Record<string, FieldValue>> }) => ({
+            docs: [...docs.values()].filter((doc) => Object.entries(selector).every(([field, cond]) => Object.entries(cond).every(([op, value]) => {
+              const have = doc[field];
+              if (op === '$eq') return have === value;
+              if (op === '$gt') return typeof have === 'number' && typeof value === 'number' && have > value;
+              throw new Error(`fake find: unsupported ${op}`);
+            }))),
+            bookmark: 'done',
+          })),
         };
         dbs.set(name, db);
       }
@@ -143,5 +152,41 @@ describe('CouchDBPersistence.update / delete', () => {
     await adapter.delete('User', 'user-1');
     expect(await adapter.getById('User', 'user-1')).toBeNull();
     await expect(adapter.delete('User', 'user-1')).resolves.toBeUndefined();
+  });
+});
+
+describe('CouchDBPersistence.query', () => {
+  beforeEach(async () => {
+    await adapter.create('Task', { id: 'a', title: 'alpha entry', minutes: 10, tags: ['x'] });
+    await adapter.create('Task', { id: 'b', title: 'beta entry', minutes: 20, tags: ['y'] });
+    await adapter.create('Task', { id: 'c', title: 'gamma', minutes: 30 });
+  });
+
+  it('pushes Mango-expressible ops to _find and filters the rest in memory', async () => {
+    const rows = await adapter.query('Task', [
+      { field: 'minutes', op: '>', value: 5 },
+      { field: 'title', op: 'contains', value: 'ENTRY' },
+      { field: 'tags', op: 'array-contains', value: 'y' },
+    ]);
+    expect(rows.map((r) => r.id)).toEqual(['b']);
+    expect(dbs.get('tasks')?.find).toHaveBeenCalledWith({ selector: { minutes: { $gt: 5 } } });
+  });
+
+  it('control: with no Mango-expressible op it lists instead of calling _find', async () => {
+    const rows = await adapter.query('Task', [{ field: 'title', op: 'contains', value: 'gam' }]);
+    expect(rows.map((r) => r.id)).toEqual(['c']);
+    expect(dbs.get('tasks')?.find).not.toHaveBeenCalled();
+  });
+
+  it('edge: a second filter on the same field is kept, not overwritten in the selector', async () => {
+    const rows = await adapter.query('Task', [
+      { field: 'minutes', op: '>', value: 5 },
+      { field: 'minutes', op: '<', value: 30 },
+    ]);
+    expect(rows.map((r) => r.id)).toEqual(['a', 'b']);
+  });
+
+  it('edge: no filters returns every row', async () => {
+    expect(await adapter.query('Task', [])).toHaveLength(3);
   });
 });
