@@ -1,6 +1,6 @@
 {
   "name": "@almadar/server",
-  "version": "2.51.0",
+  "version": "2.52.0",
   "description": "Shared server infrastructure for Almadar applications",
   "type": "module",
   "main": "./dist/index.js",
@@ -64,7 +64,7 @@
     "zod": "^3.24.0"
   },
   "peerDependencies": {
-    "@almadar-io/rabit": "^0.65.46",
+    "@almadar-io/rabit": "^0.65.47",
     "express": "^5.0.0"
   },
   "peerDependenciesMeta": {
