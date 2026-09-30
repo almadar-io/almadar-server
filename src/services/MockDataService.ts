@@ -20,9 +20,8 @@ import {
   type UserContext,
 } from '@almadar/core';
 import type { PersistenceAdapter } from '@almadar/runtime';
-import { MockPersistenceAdapter } from '@almadar/runtime/mockPersistence';
-import { checkMutationAccess } from '@almadar/runtime/entityAccess';
-import { entityAccessPoliciesByStoreKey, ownerFieldsFromSchema } from '@almadar/core/mock';
+import { installPolicyOwnerGates, MockPersistenceAdapter } from '@almadar/runtime/mockPersistence';
+import { ownerFieldsFromSchema } from '@almadar/core/mock';
 import { env } from '../lib/env.js';
 import { logger } from '../lib/logger.js';
 import { reviveTimestamps } from './data/timestamps.js';
@@ -220,20 +219,11 @@ export class MockDataService {
     }
   }
 
-  /** The `@create` owner gate, as the runtime installs it: a viewer only owns rows it may create. */
+  /** The owner gates, installed exactly as the runtime installs them (`installPolicyOwnerGates`). */
   private installOwnerGate(schema: OrbitalSchema): void {
-    const policiesByStore = entityAccessPoliciesByStoreKey(schema);
-    this.store.setOwnerGate((storeKey, candidateRow) => {
-      const user = this.viewer;
-      if (!user) return true;
-      return checkMutationAccess(candidateRow, policiesByStore.get(storeKey)?.create, { user });
-    });
-    this.store.setOwnerCandidateGate((storeKey, candidateRow, identityRow) => {
-      const persona = personaFromIdentityRow(identityRow);
-      if (!persona) return false;
-      return checkMutationAccess(candidateRow, policiesByStore.get(storeKey)?.create, { user: persona });
-    });
+    installPolicyOwnerGates(this.store, schema, () => this.viewer);
   }
+
 
   /**
    * Seed an entity through the shared store. `key` is the entity name (a collection
