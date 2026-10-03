@@ -125,8 +125,8 @@ describe('CouchDBPersistence.getById / list', () => {
     expect(row?.name).toBe('Ada');
     expect(row).not.toHaveProperty('_rev');
     expect(row).not.toHaveProperty('_id');
-    expect(row?.createdAt).toBeInstanceOf(Date);
-    expect(row?.updatedAt).toBeInstanceOf(Date);
+    expect(row?.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(row?.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
   it('lists all rows', async () => {

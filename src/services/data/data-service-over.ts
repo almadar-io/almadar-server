@@ -4,16 +4,12 @@
  * create/update, `null` for an update of a missing row, `delete` reporting whether a row existed);
  * the adapter owns storage, and its native `query` / `listPage` when it has them.
  */
+import type { BaseEntity } from '../DataService.js';
 import type { PersistenceAdapter } from '@almadar/runtime';
 import type { EntityRow, FieldValue, StoreContract, StoreFilter } from '@almadar/core';
 import type { DataService, PaginatedResult, PaginationOptions } from '../DataService.js';
 import { filterRows, pageRows } from './row-query.js';
 
-interface Timestamped {
-  id: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 /** Rows are stored as `EntityRow`; callers name their shape. The one boundary between the two. */
 function asEntity<T>(row: EntityRow): T {
@@ -35,7 +31,7 @@ function storeFilters<T>(filters: readonly StoreFilter<T>[]): StoreFilter<Entity
 
 export function dataServiceOver(adapter: PersistenceAdapter): DataService {
   const createRow = async (collection: string, fields: EntityRow): Promise<EntityRow> => {
-    const now = new Date();
+    const now = new Date().toISOString();
     const row: EntityRow = { ...fields, createdAt: now, updatedAt: now };
     const { id } = await adapter.create(collection, row);
     return { ...row, id };
@@ -67,18 +63,18 @@ export function dataServiceOver(adapter: PersistenceAdapter): DataService {
       return row === null ? null : asEntity<T>(row);
     },
 
-    async create<T extends Timestamped>(collection: string, data: Partial<T>): Promise<T> {
+    async create<T extends BaseEntity>(collection: string, data: Partial<T>): Promise<T> {
       return asEntity<T>(await createRow(collection, asRow(data)));
     },
 
-    async update<T extends Timestamped>(collection: string, id: string, data: Partial<T>): Promise<T | null> {
+    async update<T extends BaseEntity>(collection: string, id: string, data: Partial<T>): Promise<T | null> {
       const current = await adapter.getById(collection, id);
       if (current === null) return null;
       const changes = asRow(data);
       delete changes.id;
       delete changes.createdAt;
       if (Object.keys(changes).length === 0) return asEntity<T>(current);
-      const next: EntityRow = { ...changes, updatedAt: new Date() };
+      const next: EntityRow = { ...changes, updatedAt: new Date().toISOString() };
       await adapter.update(collection, id, next);
       return asEntity<T>({ ...current, ...next, id });
     },
@@ -95,7 +91,7 @@ export function dataServiceOver(adapter: PersistenceAdapter): DataService {
       return rows.map((row) => asEntity<T>(row));
     },
 
-    getStore<T extends Timestamped>(collection: string): StoreContract<T> {
+    getStore<T extends BaseEntity>(collection: string): StoreContract<T> {
       return {
         getById: (id) => service.getById<T>(collection, id),
         create: async (data) => asEntity<T>(await createRow(collection, asRow(data))),

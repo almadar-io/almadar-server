@@ -38,11 +38,11 @@ export function serializeValue(value: FieldValue | undefined): unknown {
   return value;
 }
 
-/** pg returns timestamptz as Date already; normalize createdAt/updatedAt if not. */
+/** pg returns timestamptz as Date; rows leave every store with ISO-string createdAt/updatedAt. */
 export function deserializeRow<T extends object>(row: T): T {
   for (const key of ['createdAt', 'updatedAt']) {
     const value: unknown = Reflect.get(row, key);
-    if (typeof value === 'string') Reflect.set(row, key, new Date(value));
+    if (value instanceof Date) Reflect.set(row, key, value.toISOString());
   }
   return row;
 }

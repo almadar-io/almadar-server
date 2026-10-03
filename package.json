@@ -1,6 +1,6 @@
 {
   "name": "@almadar/server",
-  "version": "2.52.0",
+  "version": "2.53.0",
   "description": "Shared server infrastructure for Almadar applications",
   "type": "module",
   "main": "./dist/index.js",
@@ -48,9 +48,9 @@
     "prepare": "git config core.hooksPath .githooks"
   },
   "dependencies": {
-    "@almadar/core": "^10.112.0",
+    "@almadar/core": "^10.116.0",
     "@almadar/logger": "^1.15.0",
-    "@almadar/runtime": "^6.98.0",
+    "@almadar/runtime": "^6.102.0",
     "compression": "^1.8.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",
@@ -64,7 +64,7 @@
     "zod": "^3.24.0"
   },
   "peerDependencies": {
-    "@almadar-io/rabit": "^0.65.47",
+    "@almadar-io/rabit": "^0.65.51",
     "express": "^5.0.0"
   },
   "peerDependenciesMeta": {
@@ -73,7 +73,7 @@
     }
   },
   "devDependencies": {
-    "@almadar/eslint-plugin": "^2.20.0",
+    "@almadar/eslint-plugin": "^2.21.0",
     "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",

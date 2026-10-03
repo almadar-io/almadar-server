@@ -11,7 +11,7 @@ import { dataServiceOver } from '../data/data-service-over.js';
 import { filterRows, pageRows } from '../data/row-query.js';
 import { MockDataPersistence, MockDataService } from '../MockDataService.js';
 
-interface Task { id: string; createdAt: Date; updatedAt: Date; title?: string; points?: number }
+interface Task { id: string; createdAt: string; updatedAt: string; title?: string; points?: number }
 
 class PushdownMemory extends InMemoryPersistence {
   queries = 0;
@@ -38,7 +38,7 @@ describe.each(adapters)('dataServiceOver %s', (_label, make) => {
     const made = await ds.create<Task>('Task', { title: 't' });
     expect(made).toMatchObject({ title: 't' });
     expect(typeof made.id).toBe('string');
-    expect(made.createdAt).toBeInstanceOf(Date);
+    expect(made.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(made.updatedAt).toEqual(made.createdAt);
     expect(await ds.getById<Task>('Task', made.id)).toEqual(made);
     expect((await ds.create<Task>('Task', { id: 'fixed', title: 'u' })).id).toBe('fixed');
@@ -48,10 +48,10 @@ describe.each(adapters)('dataServiceOver %s', (_label, make) => {
     const ds = dataServiceOver(make());
     const made = await ds.create<Task>('Task', { title: 'a', points: 1 });
     await new Promise((r) => setTimeout(r, 5));
-    const next = await ds.update<Task>('Task', made.id, { points: 2, id: 'ignored', createdAt: new Date(0) });
+    const next = await ds.update<Task>('Task', made.id, { points: 2, id: 'ignored', createdAt: '1970-01-01T00:00:00.000Z' });
     expect(next).toMatchObject({ id: made.id, title: 'a', points: 2 });
     expect(next?.createdAt).toEqual(made.createdAt);
-    expect(next && next.updatedAt.getTime()).toBeGreaterThan(made.updatedAt.getTime());
+    expect(next && Date.parse(next.updatedAt)).toBeGreaterThan(Date.parse(made.updatedAt));
     expect(await ds.getById<Task>('Task', made.id)).toEqual(next);
   });
 
@@ -97,7 +97,7 @@ describe.each(adapters)('dataServiceOver %s', (_label, make) => {
   it('getStore binds the collection; its update throws on a missing row', async () => {
     const ds = dataServiceOver(make());
     const store = ds.getStore<Task>('Task');
-    const made = await store.create({ title: 's', createdAt: new Date(), updatedAt: new Date() });
+    const made = await store.create({ title: 's', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
     expect(await store.getById(made.id)).toMatchObject({ title: 's' });
     await expect(store.update('missing', { title: 'x' })).rejects.toThrow(/not found/);
     await store.delete(made.id);

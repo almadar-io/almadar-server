@@ -8,6 +8,7 @@
  * @packageDocumentation
  */
 
+import type { BaseEntity } from './DataService.js';
 import {
   personaFromIdentityRow,
   resolveDefaultViewer,
@@ -24,7 +25,7 @@ import { installPolicyOwnerGates, MockPersistenceAdapter } from '@almadar/runtim
 import { ownerFieldsFromSchema } from '@almadar/core/mock';
 import { env } from '../lib/env.js';
 import { logger } from '../lib/logger.js';
-import { reviveTimestamps } from './data/timestamps.js';
+import { isoTimestamps } from './data/timestamps.js';
 
 /**
  * The columns that hold a user id. Declared, never inferred from a field name:
@@ -93,11 +94,6 @@ export interface EntitySchema {
   deletePolicy?: SExpr;
 }
 
-interface BaseEntity {
-  id: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 // ============================================================================
 // MockDataService
@@ -333,11 +329,11 @@ export class MockDataPersistence implements PersistenceAdapter {
 
   async getById(entityType: string, id: string): Promise<EntityRow | null> {
     const row = this.mock.getById<EntityRow>(entityType, id);
-    return row === null ? null : reviveTimestamps(row);
+    return row === null ? null : isoTimestamps(row);
   }
 
   async list(entityType: string): Promise<EntityRow[]> {
-    return this.mock.list<EntityRow>(entityType).map(reviveTimestamps);
+    return this.mock.list<EntityRow>(entityType).map(isoTimestamps);
   }
 
   async countRows(entityType: string): Promise<number> {

@@ -26,8 +26,8 @@ import { PostgresDataService } from '../postgres/postgres-data-service.js';
 
 interface Task {
   id: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   title: string;
   done?: boolean;
   tags?: string[];
@@ -57,8 +57,8 @@ describe('PostgresDataService.create', () => {
     queryMock.mockResolvedValue(queryResult([], 1));
     const row = await service.create<Task>('Task', { id: 'task-1', title: 'T' });
     expect(row).toMatchObject({ id: 'task-1', title: 'T' });
-    expect(row.createdAt).toBeInstanceOf(Date);
-    expect(row.updatedAt).toBeInstanceOf(Date);
+    expect(row.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(row.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     const [sql, params] = queryMock.mock.calls[0];
     expect(sql).toContain('INSERT INTO "tasks"');
     expect(params).toContain('task-1');
@@ -102,7 +102,7 @@ describe('PostgresDataService.update', () => {
       .mockResolvedValueOnce(queryResult([], 1));
     const result = await service.update<Task>('Task', 'task-1', { title: 'New' });
     expect(result).toMatchObject({ id: 'task-1', title: 'New' });
-    expect(result && result.updatedAt.getTime()).toBeGreaterThan(new Date('2026-01-01').getTime());
+    expect(result && Date.parse(result.updatedAt)).toBeGreaterThan(new Date('2026-01-01').getTime());
     const [sql, params] = queryMock.mock.calls[1];
     expect(sql).toContain('UPDATE "tasks" SET');
     expect(sql).toContain('WHERE "id" = $');
@@ -137,7 +137,7 @@ describe('PostgresDataService.getById / list / query', () => {
       queryResult([{ id: 'x', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' }]),
     );
     const row = await service.getById<Task>('Task', 'x');
-    expect(row?.createdAt).toBeInstanceOf(Date);
+    expect(row?.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
   it('query pushes supported filters into SQL and deserializes rows', async () => {

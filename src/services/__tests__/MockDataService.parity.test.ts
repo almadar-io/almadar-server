@@ -10,7 +10,7 @@ import type { EntityField, EntityRow } from '@almadar/core';
 import { MockPersistenceAdapter } from '@almadar/runtime/mockPersistence';
 import { MockDataService } from '../MockDataService.js';
 
-interface Ticket { id: string; createdAt: Date; updatedAt: Date; title: string }
+interface Ticket { id: string; createdAt: string; updatedAt: string; title: string }
 
 const PERSON: Array<EntityField & { name: string }> = [
   { name: 'id', type: 'string', required: true },

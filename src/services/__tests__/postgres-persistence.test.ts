@@ -100,7 +100,7 @@ describe('PostgresPersistence.getById / list', () => {
       queryResult([{ id: 'x', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' }]),
     );
     const row = await adapter.getById('Task', 'x');
-    expect(row?.createdAt).toBeInstanceOf(Date);
+    expect(row?.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
   it('list returns all rows of the entity table', async () => {

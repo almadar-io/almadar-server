@@ -4,8 +4,8 @@ import { CouchDBDataService } from '../couchdb/couchdb-data-service.js';
 
 interface Task {
   id: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   title: string;
   done?: boolean;
   minutes?: number;
@@ -134,8 +134,8 @@ describe('CouchDBDataService.create', () => {
   it('honors a supplied non-empty string id and returns the full row with Date timestamps', async () => {
     const row = await service.create<Task>('Task', { id: 'task-1', title: 'T' });
     expect(row.id).toBe('task-1');
-    expect(row.createdAt).toBeInstanceOf(Date);
-    expect(row.updatedAt).toBeInstanceOf(Date);
+    expect(row.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(row.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     const stored = tasksDb().docs.get('task-1');
     expect(stored).toBeDefined();
     expect(typeof stored?.createdAt).toBe('string'); // ISO in the doc
@@ -166,7 +166,7 @@ describe('CouchDBDataService.getById / list', () => {
     await service.create<Task>('Task', { id: 'task-1', title: 'T' });
     const row = await service.getById<Task>('Task', 'task-1');
     expect(row?.title).toBe('T');
-    expect(row?.createdAt).toBeInstanceOf(Date);
+    expect(row?.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(row).not.toHaveProperty('_rev');
     expect(row).not.toHaveProperty('_id');
   });
@@ -190,7 +190,7 @@ describe('CouchDBDataService.update', () => {
     const updated = await service.update<Task>('Task', 'task-1', { title: 'New' });
     expect(updated?.title).toBe('New');
     expect(updated?.id).toBe('task-1');
-    expect(updated?.updatedAt.getTime()).toBeGreaterThanOrEqual(created.updatedAt.getTime());
+    expect(Date.parse(updated?.updatedAt ?? "")).toBeGreaterThanOrEqual(Date.parse(created.updatedAt));
     const stored = tasksDb().docs.get('task-1');
     expect(stored?.title).toBe('New');
     expect(stored?._rev).toBeTruthy();

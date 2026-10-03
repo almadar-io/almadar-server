@@ -24,10 +24,11 @@ import type { ParsedFilter } from '../utils/queryFilters.js';
 // Types
 // ============================================================================
 
-interface BaseEntity {
+/** Every stored row: its id and ISO-8601 creation/update stamps. */
+export interface BaseEntity {
   id: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /**

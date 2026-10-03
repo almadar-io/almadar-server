@@ -13,8 +13,8 @@ const connectionString = process.env.TEST_COUCHDB_URL;
 
 interface TimeEntryRow {
   id: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   note?: string;
   minutes?: number;
   done?: boolean;
@@ -49,14 +49,14 @@ describe.skipIf(!connectionString)('couchdb integration (TEST_COUCHDB_URL)', () 
     const service = new CouchDBDataService({ client });
     const created = await service.create<TimeEntryRow>('TimeEntry', { note: 'round-trip', minutes: 30, done: false });
     expect(created.id).toBeTruthy();
-    expect(created.createdAt).toBeInstanceOf(Date);
+    expect(created.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
 
     const fetched = await service.getById<TimeEntryRow>('TimeEntry', created.id);
     expect(fetched?.note).toBe('round-trip');
 
     const updated = await service.update<TimeEntryRow>('TimeEntry', created.id, { minutes: 45 });
     expect(updated?.minutes).toBe(45);
-    expect(updated?.updatedAt.getTime()).toBeGreaterThanOrEqual(created.updatedAt.getTime());
+    expect(Date.parse(updated?.updatedAt ?? "")).toBeGreaterThanOrEqual(Date.parse(created.updatedAt));
 
     expect(await service.delete('TimeEntry', created.id)).toBe(true);
     expect(await service.delete('TimeEntry', created.id)).toBe(false);

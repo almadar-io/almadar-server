@@ -12,8 +12,8 @@ import { MockDataService } from '../MockDataService.js';
 
 interface Task {
   id: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   title: string;
 }
 

@@ -1,10 +1,10 @@
 /**
- * CouchDB internals: database naming, id minting, doc (de)serialization (Dates → ISO strings)
+ * CouchDB internals: database naming, id minting, doc (de)serialization (ISO-string timestamps)
  * and the Mango operator mapping.
  */
 import type { MangoSelector } from 'nano';
 import type { EntityRow, FieldValue } from '@almadar/core';
-import { reviveTimestamps } from '../data/timestamps.js';
+import { isoTimestamps } from '../data/timestamps.js';
 
 // Database naming stays single-owned by the postgres rows module
 // (same deterministic entityType → name mapping, reused verbatim).
@@ -46,10 +46,10 @@ export function serializeRow(row: EntityRow): EntityRow {
   return doc;
 }
 
-/** CouchDB doc → row: strip _id/_rev, ISO timestamps back to Date. */
+/** CouchDB doc → row: strip _id/_rev; timestamps stay ISO strings. */
 export function docToRow(doc: CouchDoc): EntityRow {
   const { _id: _docId, _rev: _docRev, ...rest } = doc;
-  return reviveTimestamps(rest);
+  return isoTimestamps(rest);
 }
 
 /**
