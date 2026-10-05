@@ -6,7 +6,7 @@
  */
 
 import type { OrbitalSchema, SnapshotDocument, HistoryMeta } from '@almadar/core';
-import { getFirestore } from '../lib/db.js';
+import { getFirestore } from '@almadar/integrations/firebase';
 import { toFirestoreFormat, fromFirestoreFormat, type FirestoreSchemaDoc } from './firestoreFormat.js';
 
 const SNAPSHOTS_COLLECTION = 'snapshots';

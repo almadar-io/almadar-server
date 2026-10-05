@@ -1,6 +1,6 @@
 import { NextFunction, Request, RequestHandler, Response } from 'express';
 import type { DecodedIdToken } from 'firebase-admin/auth';
-import { getAuth } from '../lib/db.js';
+import { getAuth } from '@almadar/integrations/firebase';
 import { createLogger } from '@almadar/logger';
 import { resolveDevIdentity } from './devIdentity.js';
 

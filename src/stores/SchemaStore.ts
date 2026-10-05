@@ -7,7 +7,7 @@
 
 import type { OrbitalSchema, StatsView, AppSummary, SaveOptions, SaveResult, DomainContext } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
-import { getFirestore } from '../lib/db.js';
+import { getFirestore } from '@almadar/integrations/firebase';
 import { toFirestoreFormat, fromFirestoreFormat, type FirestoreSchemaDoc } from './firestoreFormat.js';
 import { SchemaProtectionService } from './SchemaProtectionService.js';
 import type { SnapshotStore } from './SnapshotStore.js';

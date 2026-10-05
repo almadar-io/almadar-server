@@ -8,7 +8,7 @@
  * transaction: a grant is handed out once, and never after its TTL.
  */
 import type { DocumentData } from 'firebase-admin/firestore';
-import { getFirestore } from './db.js';
+import { getFirestore } from '@almadar/integrations/firebase';
 
 /** The slice of Firestore this store uses; a firebase-admin `Firestore` satisfies it. */
 export interface GrantDocRef {

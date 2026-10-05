@@ -10,7 +10,7 @@
 import type { DocumentData } from 'firebase-admin/firestore';
 import type { PersistenceAdapter } from '@almadar/runtime';
 import type { EntityRow, FieldValue, RowPage, RowPageRequest, StoreFilter, StoreFilterOp } from '@almadar/core';
-import { getFirestore } from '../../lib/db.js';
+import { getFirestore } from '@almadar/integrations/firebase';
 import { filterRows, pageRows } from '../data/row-query.js';
 
 export interface RowDoc {

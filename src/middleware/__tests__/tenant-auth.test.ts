@@ -15,7 +15,7 @@ const verifyProject = vi.fn<(token: string) => Promise<Decoded>>();
 const verifyForTenant = vi.fn<(tenant: string, token: string) => Promise<Decoded>>();
 
 vi.mock('../../lib/env.js', () => ({ env: { ALLOW_DEV_AUTH_BYPASS: false } }));
-vi.mock('../../lib/db.js', () => ({
+vi.mock('@almadar/integrations/firebase', () => ({
   getAuth: () => ({
     verifyIdToken: (token: string) => verifyProject(token),
     tenantManager: () => ({ authForTenant: (tenant: string) => ({ verifyIdToken: (token: string) => verifyForTenant(tenant, token) }) }),
