@@ -6,8 +6,8 @@ import { describe, it, expect, afterAll } from 'vitest';
 import nano from 'nano';
 import type { Entity } from '@almadar/core';
 import { CouchDBDataService } from '../couchdb/couchdb-data-service.js';
-import { CouchDBPersistence } from '../couchdb/couchdb-persistence.js';
-import { databaseNameFor } from '../couchdb/rows.js';
+import { CouchDBPersistence } from '@almadar/db';
+import { databaseNameFor } from '@almadar/db';
 
 const connectionString = process.env.TEST_COUCHDB_URL;
 

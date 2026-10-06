@@ -5,7 +5,7 @@
  */
 
 import type { ValidationResults, ValidationMeta } from '@almadar/core';
-import { getFirestore } from '@almadar/integrations/firebase';
+import { getFirestore } from '@almadar/db/firebase';
 import { createLogger } from '@almadar/logger';
 
 const VALIDATION_COLLECTION = 'validation';

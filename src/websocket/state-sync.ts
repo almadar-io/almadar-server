@@ -9,7 +9,7 @@
  */
 
 import { createLogger } from '@almadar/logger';
-import { getAuth } from '@almadar/integrations/firebase';
+import { getAuth } from '@almadar/db/firebase';
 
 const syncLog = createLogger('almadar:server:websocket:statesync');
 

@@ -8,15 +8,11 @@
  */
 
 import type { StoreContract, StoreFilter } from '@almadar/core';
-import { Pool } from 'pg';
-import nano from 'nano';
-import { env } from '../lib/env.js';
+import { persistenceSpec } from '../lib/env.js';
 import { logger } from '../lib/logger.js';
 import { getMockDataService, MockDataPersistence, type FieldSchema } from './MockDataService.js';
-import { PostgresDataService } from './postgres/postgres-data-service.js';
-import { CouchDBDataService } from './couchdb/couchdb-data-service.js';
-import { FirestorePersistence } from './firestore/firestore-persistence.js';
-import { observedPersistence } from './observed-persistence.js';
+import { observedPersistence } from '@almadar/db';
+import { createPersistence, type PersistenceSpec } from '@almadar/db/backend';
 import { dataServiceOver } from './data/data-service-over.js';
 import type { ParsedFilter } from '../utils/queryFilters.js';
 
@@ -79,44 +75,37 @@ export interface DataService {
 // ============================================================================
 
 /**
- * Create the appropriate data service based on environment configuration.
+ * The data service for the declared persistence spec. The mock backend stays an explicit
+ * special case: the compiled apps' generated `seedMockData` seeds the `MockDataService`
+ * singleton synchronously, so the mock spec hands `createPersistence` that singleton's adapter
+ * instead of a fresh store.
  */
-function createDataService(): DataService {
-  if (env.USE_MOCK_DATA) {
-    // warn, not info: rows are in-memory and lost on restart. env.ts refuses
-    // this combination outright under NODE_ENV=production, so reaching here
-    // means a deliberate dev opt-in — but it must still be visible in the log.
-    logger.warn('[DataService] USE_MOCK_DATA=true — serving in-memory mock rows, not the real data source');
-    return dataServiceOver(observedPersistence(new MockDataPersistence(getMockDataService), { service: 'mock' }));
-  }
-  if (env.DATA_BACKEND === 'postgres') {
-    if (!env.DATABASE_URL) {
-      throw new Error(
-        '@almadar/server: DATA_BACKEND=postgres requires DATABASE_URL to be set',
+function createDataService(spec: PersistenceSpec = persistenceSpec): DataService {
+  switch (spec.backend) {
+    case 'mock':
+      // warn, not info: rows are in-memory and lost on restart. `persistenceSpecFromEnv` refuses
+      // this under NODE_ENV=production, so reaching here means a deliberate dev opt-in.
+      logger.warn('[DataService] mock backend — serving in-memory mock rows, not the real data source');
+      return dataServiceOver(
+        observedPersistence(createPersistence({ backend: 'mock', adapter: new MockDataPersistence(getMockDataService) }), { service: 'mock' }),
       );
-    }
-    logger.info('[DataService] Using PostgresDataService');
-    logger.info(
-      'Postgres adapter: hosts call ensureSchema + optionally applySchemaEvolution at boot for entity-field changes (additive by default; destructive requires policy.destructive + PG_MIGRATE_DESTRUCTIVE=apply)',
-    );
-    const pool = new Pool({
-      connectionString: env.DATABASE_URL,
-      ...(env.PGPOOL_MAX !== undefined ? { max: env.PGPOOL_MAX } : {}),
-    });
-    return new PostgresDataService({ pool });
-  }
-  if (env.DATA_BACKEND === 'couchdb') {
-    if (!env.COUCHDB_URL) {
-      throw new Error(
-        '@almadar/server: DATA_BACKEND=couchdb requires COUCHDB_URL to be set',
+    case 'postgres':
+      logger.info('[DataService] Using PostgresPersistence');
+      logger.info(
+        'Postgres adapter: hosts call ensureSchema + optionally applySchemaEvolution at boot for entity-field changes (additive by default; destructive requires policy.destructive + PG_MIGRATE_DESTRUCTIVE=apply)',
       );
-    }
-    logger.info('[DataService] Using CouchDBDataService');
-    const client = nano(env.COUCHDB_URL);
-    return new CouchDBDataService({ client });
+      break;
+    case 'couchdb':
+      logger.info('[DataService] Using CouchDBPersistence');
+      break;
+    case 'firestore':
+      logger.info('[DataService] Using Firestore');
+      break;
+    case 'memory':
+      logger.info('[DataService] Using in-memory persistence');
+      break;
   }
-  logger.info('[DataService] Using Firestore');
-  return dataServiceOver(observedPersistence(new FirestorePersistence({ root: '' }), { service: 'firestore' }));
+  return dataServiceOver(observedPersistence(createPersistence(spec), { service: spec.backend }));
 }
 
 /**
@@ -147,11 +136,11 @@ export interface EntitySeedConfig {
 
 /**
  * Seed mock data for multiple entities.
- * Runs when USE_MOCK_DATA is enabled or when DATA_BACKEND=postgres/couchdb
+ * Runs when the mock backend is declared or when the backend is postgres/couchdb
  * (dev fixture parity; the firebase path stays unseeded).
  */
 export function seedMockData(entities: EntitySeedConfig[]): void {
-  if (!env.USE_MOCK_DATA && env.DATA_BACKEND !== 'postgres' && env.DATA_BACKEND !== 'couchdb') {
+  if (persistenceSpec.backend !== 'mock' && persistenceSpec.backend !== 'postgres' && persistenceSpec.backend !== 'couchdb') {
     logger.info('[DataService] Mock mode disabled, skipping seed');
     return;
   }

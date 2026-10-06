@@ -1,71 +1,56 @@
 import { NextFunction, Request, RequestHandler, Response } from 'express';
-import type { DecodedIdToken } from 'firebase-admin/auth';
-import { getAuth } from '@almadar/integrations/firebase';
-import { createLogger } from '@almadar/logger';
-import { resolveDevIdentity } from './devIdentity.js';
-
-const authLog = createLogger('almadar:server:auth');
-
-const BEARER_PREFIX = 'Bearer ';
+import type { AuthOutcome, TokenVerifier } from '@almadar/auth';
+import { authenticateBearer as verifyBearer, verifierFromEnv } from '@almadar/auth/server';
 
 /** Returns the Identity Platform tenant whose users may call this request's app, or null when it has none. */
 export type TenantOf = (req: Request) => string | null;
 
-async function verify(token: string, tenant: string | null): Promise<DecodedIdToken> {
-  if (tenant !== null) return getAuth().tenantManager().authForTenant(tenant).verifyIdToken(token);
-  const decoded = await getAuth().verifyIdToken(token);
-  // A tenant token is a valid token of the project too; it belongs to a published app's end user, never to these routes.
-  if (decoded.firebase.tenant !== undefined) throw new Error(`token belongs to tenant ${decoded.firebase.tenant}`);
-  return decoded;
-}
+export type { AuthOutcome };
 
-/** Who a request's bearer is, or why it is refused. Shared by the Express and Hono middlewares. */
-export type AuthOutcome = { ok: true; user: DecodedIdToken } | { ok: false; status: 401; error: string };
+let appVerifier: TokenVerifier | null = null;
 
 /**
- * Resolve a request's `Authorization` header: the dev-bypass identity when that is enabled, else a
- * verified Firebase ID token. `tenant` is the app's Identity Platform tenant (the token must be one of
- * its users), `null` for project-level routes (a tenant token is refused), or `undefined` when the
- * request belongs to an app with no sign-in tenant (always refused).
+ * Resolve a request's `Authorization` header: a token verified by the app's declared provider
+ * (`AUTH_PROVIDER`; in dev, the Auth emulator via `FIREBASE_AUTH_EMULATOR_HOST`). `tenant` is the app's sign-in
+ * tenant (the token must be one of its users), `null` for project-level routes (a tenant token is
+ * refused), or `undefined` when the request belongs to an app with no sign-in tenant (always refused).
  */
 export async function authenticateBearer(authorization: string | undefined, tenant: string | null | undefined): Promise<AuthOutcome> {
-  const devUser = resolveDevIdentity(authorization);
-  if (devUser) {
-    authLog.debug('auth:devBypass', { uid: devUser.uid, role: devUser['role'] });
-    return { ok: true, user: devUser };
-  }
-  if (!authorization || !authorization.startsWith(BEARER_PREFIX)) {
-    return { ok: false, status: 401, error: 'Authorization header missing or malformed' };
-  }
-  if (tenant === undefined) return { ok: false, status: 401, error: 'This app has no sign-in tenant' };
-  try {
-    const user = await verify(authorization.slice(BEARER_PREFIX.length), tenant);
-    authLog.debug('auth:verified', { uid: user.uid, email: user.email, ...(tenant ? { tenant } : {}) });
-    return { ok: true, user };
-  } catch (error) {
-    // Expected 401 path: expired / invalid / rejected token — a routine client condition, not a server error.
-    authLog.info('auth:rejected', { reason: error instanceof Error ? error.message : String(error), ...(tenant ? { tenant } : {}) });
-    return { ok: false, status: 401, error: 'Unauthorized' };
-  }
+  appVerifier ??= verifierFromEnv(process.env);
+  return verifyBearer(appVerifier, authorization, tenant);
 }
 
-function firebaseAuth(tenantOf: TenantOf | null): RequestHandler {
+function bearerAuth(tenantOf: TenantOf | null): RequestHandler {
   return async (req: Request, res: Response, next: NextFunction) => {
     const tenant = tenantOf ? (tenantOf(req) ?? undefined) : null;
     const outcome = await authenticateBearer(req.headers.authorization, tenant);
     if (!outcome.ok) return res.status(outcome.status).json({ error: outcome.error });
-    req.firebaseUser = outcome.user;
-    res.locals.firebaseUser = outcome.user;
+    req.authUser = outcome.user;
+    res.locals.authUser = outcome.user;
     return next();
   };
 }
 
-/** Verifies project-level Firebase ID tokens (the Studio's own users); refuses a published app's tenant tokens. */
-export const authenticateFirebase: RequestHandler = firebaseAuth(null);
+/** Verifies project-level ID tokens (the Studio's own users); refuses a published app's tenant tokens. */
+export const authenticateFirebase: RequestHandler = bearerAuth(null);
 
-/** Verifies ID tokens against the Identity Platform tenant of the app the request belongs to. */
+/** Verifies ID tokens against the sign-in tenant of the app the request belongs to. */
 export function authenticateFirebaseForTenant(tenantOf: TenantOf): RequestHandler {
-  return firebaseAuth(tenantOf);
+  return bearerAuth(tenantOf);
 }
+
+/**
+ * For routes open to anonymous visitors: a request with no `Authorization` header goes on with no
+ * `authUser` (anonymous); one that carries a credential must verify, or it is refused.
+ */
+export const identifyBearer: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
+  const authorization = req.headers.authorization;
+  if (authorization === undefined) return next();
+  const outcome = await authenticateBearer(authorization, null);
+  if (!outcome.ok) return res.status(outcome.status).json({ error: outcome.error });
+  req.authUser = outcome.user;
+  res.locals.authUser = outcome.user;
+  return next();
+};
 
 export default authenticateFirebase;

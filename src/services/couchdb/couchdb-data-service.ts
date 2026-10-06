@@ -5,9 +5,7 @@
 import type { StoreContract, StoreFilter } from '@almadar/core';
 import type { BaseEntity, DataService, PaginationOptions, PaginatedResult } from '../DataService.js';
 import { dataServiceOver } from '../data/data-service-over.js';
-import { observedPersistence } from '../observed-persistence.js';
-import { CouchDBPersistence } from './couchdb-persistence.js';
-import type { CouchDBClient } from './rows.js';
+import { observedPersistence, CouchDBPersistence, type CouchDBClient } from '@almadar/db';
 
 
 export interface CouchDBDataServiceOptions {

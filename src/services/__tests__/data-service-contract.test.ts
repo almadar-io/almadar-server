@@ -5,10 +5,11 @@
  * fallbacks) and one with native `query`/`listPage`, so the facade behaves the same over both.
  */
 import { describe, it, expect } from 'vitest';
-import { InMemoryPersistence, type PersistenceAdapter } from '@almadar/runtime';
+import { InMemoryPersistence } from '@almadar/db/mock';
+import type { PersistenceAdapter } from '@almadar/core';
 import type { EntityRow, RowPage, RowPageRequest, StoreFilter } from '@almadar/core';
 import { dataServiceOver } from '../data/data-service-over.js';
-import { filterRows, pageRows } from '../data/row-query.js';
+import { filterRows, pageRows } from '@almadar/db';
 import { MockDataPersistence, MockDataService } from '../MockDataService.js';
 
 interface Task { id: string; createdAt: string; updatedAt: string; title?: string; points?: number }

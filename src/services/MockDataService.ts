@@ -1,6 +1,6 @@
 /**
  * MockDataService - the compiled apps' mock data API (collection-keyed, synchronous; generated
- * `seedMockData.ts` calls it without awaiting) over the runtime's `MockPersistenceAdapter`, the one
+ * `seedMockData.ts` calls it without awaiting) over `@almadar/db`'s `MockPersistenceAdapter`, the one
  * mock store both execution paths seed from: same PRNG, same ids, same relation and owner linking.
  * What stays here is the compiled path's own inputs: collection → entity naming, owner columns
  * from the schema or `ALMADAR_PERSONA_OWNS`, and the viewer from `ALMADAR_PERSONA`.
@@ -11,6 +11,7 @@
 import type { BaseEntity } from './DataService.js';
 import {
   personaFromIdentityRow,
+  type PersistenceAdapter,
   resolveDefaultViewer,
   resolvePersonaSpec,
   type EntityField,
@@ -20,12 +21,12 @@ import {
   type SExpr,
   type UserContext,
 } from '@almadar/core';
-import type { PersistenceAdapter } from '@almadar/runtime';
-import { installPolicyOwnerGates, MockPersistenceAdapter } from '@almadar/runtime/mockPersistence';
+import { MockPersistenceAdapter } from '@almadar/db/mock';
+import { installPolicyOwnerGates } from '@almadar/runtime/mockPersistence';
 import { ownerFieldsFromSchema } from '@almadar/core/mock';
 import { env } from '../lib/env.js';
 import { logger } from '../lib/logger.js';
-import { isoTimestamps } from './data/timestamps.js';
+import { isoTimestamps } from '@almadar/db';
 
 /**
  * The columns that hold a user id. Declared, never inferred from a field name:

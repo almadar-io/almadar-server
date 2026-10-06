@@ -12,8 +12,7 @@ export {
 
 export { validateBody, validateQuery, validateParams } from './validation';
 
-export { authenticateFirebase, authenticateFirebaseForTenant, authenticateBearer, type TenantOf, type AuthOutcome } from './authenticateFirebase.js';
+export { authenticateFirebase, authenticateFirebaseForTenant, authenticateBearer, identifyBearer, type TenantOf, type AuthOutcome } from './authenticateFirebase.js';
 
-export { resolveDevIdentity } from './devIdentity.js';
 
 export { compressionMiddleware, compressionFilter } from './compression.js';

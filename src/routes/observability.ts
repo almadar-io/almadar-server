@@ -18,7 +18,7 @@ const obsLog = createLogger('almadar:server:routes:observability');
 // Defense-in-depth: these endpoints expose telemetry/metrics/session data, so they
 // require an authenticated principal regardless of how the router is mounted.
 router.use((req, res, next) => {
-  if (!req.firebaseUser) {
+  if (!req.authUser) {
     res.status(401).json({ error: 'Unauthorized' });
     return;
   }

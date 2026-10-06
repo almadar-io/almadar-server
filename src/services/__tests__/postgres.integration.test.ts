@@ -5,9 +5,9 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import { Pool } from 'pg';
 import type { Entity } from '@almadar/core';
-import { ensureSchema, generateSchemaDdl } from '../postgres/schema/ddl.js';
+import { ensureSchema, generateSchemaDdl } from '@almadar/db';
 import { PostgresDataService } from '../postgres/postgres-data-service.js';
-import { PostgresPersistence } from '../postgres/postgres-persistence.js';
+import { PostgresPersistence } from '@almadar/db';
 
 const connectionString = process.env.TEST_DATABASE_URL;
 

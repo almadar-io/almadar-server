@@ -1,9 +1,9 @@
-import { DecodedIdToken } from 'firebase-admin/auth';
+import type { VerifiedUser } from '@almadar/auth';
 
 declare global {
   namespace Express {
     interface Request {
-      firebaseUser?: DecodedIdToken;
+      authUser?: VerifiedUser;
     }
   }
 }

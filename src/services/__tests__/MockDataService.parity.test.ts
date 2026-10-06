@@ -7,7 +7,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EntityField, EntityRow } from '@almadar/core';
-import { MockPersistenceAdapter } from '@almadar/runtime/mockPersistence';
+import { MockPersistenceAdapter } from '@almadar/db/mock';
 import { MockDataService } from '../MockDataService.js';
 
 interface Ticket { id: string; createdAt: string; updatedAt: string; title: string }

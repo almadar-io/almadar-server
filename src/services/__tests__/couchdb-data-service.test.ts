@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import type { CouchDBClient, CouchDoc } from '../couchdb/rows.js';
+import type { CouchDBClient, CouchDoc } from '@almadar/db';
 import { CouchDBDataService } from '../couchdb/couchdb-data-service.js';
 
 interface Task {

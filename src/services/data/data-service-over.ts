@@ -5,10 +5,9 @@
  * the adapter owns storage, and its native `query` / `listPage` when it has them.
  */
 import type { BaseEntity } from '../DataService.js';
-import type { PersistenceAdapter } from '@almadar/runtime';
-import type { EntityRow, FieldValue, StoreContract, StoreFilter } from '@almadar/core';
+import type { EntityRow, FieldValue, PersistenceAdapter, StoreContract, StoreFilter } from '@almadar/core';
 import type { DataService, PaginatedResult, PaginationOptions } from '../DataService.js';
-import { filterRows, pageRows } from './row-query.js';
+import { filterRows, pageRows } from '@almadar/db';
 
 
 /** Rows are stored as `EntityRow`; callers name their shape. The one boundary between the two. */

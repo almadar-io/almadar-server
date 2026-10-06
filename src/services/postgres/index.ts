@@ -1,7 +1,7 @@
 /**
- * Postgres persistence adapters barrel.
+ * Postgres DataService barrel; the adapter, DDL and evolution live in `@almadar/db`.
  *
- * Host injection (same pool shared by both adapters):
+ * Host injection:
  * ```ts
  * const pool = new Pool({ connectionString: process.env.DATABASE_URL });
  * await ensureSchema(pool, entities);
@@ -16,17 +16,4 @@
  * that env opt-in aborts with an error).
  */
 export { PostgresDataService, type PostgresDataServiceOptions } from './postgres-data-service.js';
-export { PostgresPersistence, type PostgresPersistenceOptions } from './postgres-persistence.js';
-export { ensureSchema, generateSchemaDdl, columnTypeFor } from './schema/ddl.js';
-export {
-  diffSchema,
-  applySchemaEvolution,
-  diffHasDestructive,
-  type SchemaDiff,
-  type ColumnDiff,
-  type CheckDiff,
-  type EvolutionPolicy,
-  type EvolutionReport,
-  type RefusedChange,
-} from './schema/evolution.js';
-export { tableNameFor, snakeNameFor } from './rows.js';
+export { applySchemaEvolution } from './schema-evolution.js';

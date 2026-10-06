@@ -6,7 +6,7 @@
  */
 
 import type { ChangeSetDocument, HistoryMeta } from '@almadar/core';
-import { getFirestore } from '@almadar/integrations/firebase';
+import { getFirestore } from '@almadar/db/firebase';
 import { createLogger } from '@almadar/logger';
 
 const CHANGESETS_COLLECTION = 'changesets';

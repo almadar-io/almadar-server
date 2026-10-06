@@ -1,56 +1,61 @@
 /**
- * Personas Router — the app's dev persona roster, over HTTP.
+ * Personas Router — a generated app's dev persona roster, signed in through the Auth emulator.
  *
- * A generated app's dev sign-in needs to know who it can sign in AS. That used
- * to be a hardcoded four-row list exported from `@almadar/core`; personas are
- * now declared per app as the seeded rows of its `[identity]` entity, so the
- * roster has to come from the app itself.
+ * Personas are the rows of the app's `[identity]` entity. In dev each one is a user of the Auth
+ * emulator (`@almadar/auth/server` `emulatedUser`: uid = row id, the row's fields as claims), so
+ * signing in as a persona yields a real ID token and `@user` resolves exactly as in production.
  *
- * It is served from the LIVE seeded rows rather than re-derived, because the
- * three seeders mint three different id schemes (`Person-N` in the Rust roster,
- * `mock-people-N` here, `Person Id N` on the interpreter path). A persona whose
- * id is not literally one of these rows owns nothing, so every ownership-scoped
- * list renders empty — and a working filter and a broken one look identical.
+ * Endpoints (mounted only while `FIREBASE_AUTH_EMULATOR_HOST` is set; a deployment has none):
+ *   GET  /personas          the roster
+ *   POST /personas/sign-in  { id } → { customToken, authEmulatorHost, projectId }
  *
- * Twin of the interpreter path's `GET /personas`
- * (`@almadar-io/playground-runtime`), down to the response envelope, so both
- * execution paths speak one protocol.
- *
- * Endpoints:
- *   GET /personas - The app's identity rows as viewers
+ * Twin of the interpreter path's `/persona` sign-in (`@almadar-io/playground-runtime`).
  *
  * @packageDocumentation
  */
 
-import { Router } from 'express';
-import { env } from './env.js';
-import { getMockDataService } from '../services/MockDataService.js';
+import { Router, type Request, type Response } from 'express';
+import { z } from 'zod';
+import type { UserContext } from '@almadar/core';
+import { emulatedUser } from '@almadar/auth/server';
 
-/**
- * Creates an Express router serving the app's persona roster.
- *
- * Returns a no-op router unless `ALLOW_DEV_AUTH_BYPASS` is on — the same switch
- * that makes a dev identity token trustworthy at all. This is a dev affordance
- * and must not exist in a real deployment, mirroring how `debugEventsRouter`
- * returns an empty router outside development.
- *
- * Mount it BEFORE the auth middleware: a pre-login persona picker cannot
- * present a token it does not have yet.
- */
-export function personasRouter(): Router {
+/** The app's identity rows as viewers; the generated `identityRoster()` reads them from its data service. */
+export type IdentityRoster = () => Promise<UserContext[]>;
+
+const SignInBodySchema = z.object({ id: z.string().min(1) });
+
+export function personasRouter(roster: IdentityRoster): Router {
   const router = Router();
+  const authEmulatorHost = process.env['FIREBASE_AUTH_EMULATOR_HOST'];
+  const projectId = process.env['FIREBASE_PROJECT_ID'];
+  if (!authEmulatorHost || !projectId) return router;
 
-  if (env.ALLOW_DEV_AUTH_BYPASS !== 'true') {
-    return router;
-  }
+  router.get('/personas', async (_req: Request, res: Response) => {
+    try {
+      const personas = await roster();
+      res.json({ success: true, personas, source: personas.length > 0 ? 'identity-entity' : 'none' });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
+    }
+  });
 
-  router.get('/personas', (_req, res) => {
-    const personas = getMockDataService().getIdentityRoster();
-    res.json({
-      success: true,
-      personas,
-      source: personas.length > 0 ? 'identity-entity' : 'none',
-    });
+  router.post('/personas/sign-in', async (req: Request, res: Response) => {
+    const body = SignInBodySchema.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ success: false, error: 'expected { id }' });
+      return;
+    }
+    try {
+      const persona = (await roster()).find((p) => p.id === body.data.id);
+      if (!persona) {
+        res.status(404).json({ success: false, error: `no persona with id ${body.data.id}` });
+        return;
+      }
+      const { customToken } = await emulatedUser(persona, process.env);
+      res.json({ success: true, customToken, authEmulatorHost, projectId });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
+    }
   });
 
   return router;

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
 import { createLogger } from '@almadar/logger';
+import { persistenceSpecFromEnv, type PersistenceSpec } from '@almadar/db/backend';
 
 // Load environment variables
 dotenv.config();
@@ -9,9 +10,6 @@ const envLog = createLogger('almadar:server:env');
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('production'),
-  // Auth dev-bypass is OFF unless explicitly opted in. Never key the bypass on
-  // NODE_ENV — an unset/misconfigured env must fail closed.
-  ALLOW_DEV_AUTH_BYPASS: z.enum(['true', 'false']).default('false'),
   PORT: z
     .string()
     .default('3030')
@@ -69,30 +67,8 @@ if (!parsed.success) {
 
 export const env = parsed.data;
 
-// Mock data in production is never a configuration anyone intends: every write
-// is accepted with a 2xx and lost on restart, and every read is fabricated.
-// Refuse the boot rather than serve it — the same fail-closed posture as
-// ALLOW_DEV_AUTH_BYPASS, which is meaningless if the data underneath is fake.
-if (env.NODE_ENV === 'production' && env.USE_MOCK_DATA) {
-  envLog.error('USE_MOCK_DATA=true with NODE_ENV=production — refusing to start', {
-    reason: 'mock rows are in-memory and non-persisted; a production server must not serve them',
-    fix: 'unset USE_MOCK_DATA (it now defaults to false), or set NODE_ENV=development for local runs',
-  });
-  throw new Error(
-    '@almadar/server: USE_MOCK_DATA=true is not permitted when NODE_ENV=production. ' +
-      'Unset USE_MOCK_DATA to use the real data source, or set NODE_ENV=development.',
-  );
-}
-
-// Same fail-closed posture for the explicit backend selector: DATA_BACKEND=mock
-// under production means the same lost-on-restart rows as USE_MOCK_DATA above.
-if (env.NODE_ENV === 'production' && env.DATA_BACKEND === 'mock') {
-  envLog.error('DATA_BACKEND=mock with NODE_ENV=production — refusing to start', {
-    reason: 'mock rows are in-memory and non-persisted; a production server must not serve them',
-    fix: "set DATA_BACKEND=postgres (with DATABASE_URL) or leave it at the default 'firebase'",
-  });
-  throw new Error(
-    '@almadar/server: DATA_BACKEND=mock is not permitted when NODE_ENV=production. ' +
-      "Set DATA_BACKEND=postgres or 'firebase', or set NODE_ENV=development.",
-  );
-}
+// The data-backend selection is declared once, in `@almadar/db`: it maps DATA_BACKEND /
+// USE_MOCK_DATA / DATABASE_URL / PGPOOL_MAX / COUCHDB_URL, refuses mock under
+// NODE_ENV=production and throws on missing backend config. Evaluated at boot so a
+// misconfigured production server fails before it serves anything.
+export const persistenceSpec: PersistenceSpec = persistenceSpecFromEnv(process.env);

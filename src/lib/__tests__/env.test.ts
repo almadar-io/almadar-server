@@ -4,8 +4,7 @@
  *
  * `USE_MOCK_DATA` decides whether the server serves real rows or in-memory
  * fabrications. It used to default to `'true'` — the only fail-open default in
- * the schema, while its neighbours (`NODE_ENV` → `production`,
- * `ALLOW_DEV_AUTH_BYPASS` → `false`) were deliberately hardened. These tests pin
+ * the schema, while its neighbour (`NODE_ENV` → `production`) was deliberately hardened. These tests pin
  * the corrected posture so the default cannot drift back.
  */
 

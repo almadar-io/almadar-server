@@ -6,7 +6,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 // Mock the db module — skill-agent transitively imports it
-vi.mock('@almadar/integrations/firebase', () => ({
+vi.mock('@almadar/db/firebase', () => ({
   db: { collection: vi.fn() },
   getFirestore: vi.fn(() => ({ collection: vi.fn() })),
   getAuth: vi.fn(() => ({ verifyIdToken: vi.fn() })),

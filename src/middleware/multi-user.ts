@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import { getAuth } from '@almadar/integrations/firebase';
+import { getAuth } from '@almadar/db/firebase';
 import type { Request, Response, NextFunction } from 'express';
 import { createLogger } from '@almadar/logger';
 

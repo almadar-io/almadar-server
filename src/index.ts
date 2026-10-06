@@ -44,8 +44,9 @@ export {
   type IEventStore,
 } from './lib/eventPersistence.js';
 export { debugEventsRouter } from './lib/debugRouter.js';
-export { personasRouter } from './lib/personasRouter.js';
-export { initializeFirebase, isFirebaseConfigured, getFirestore, getAuth, getStorage, db } from '@almadar/integrations/firebase';
+export { personasRouter, type IdentityRoster } from './lib/personasRouter.js';
+export { validateDeploymentEnv } from './lib/deploymentEnv.js';
+export { initializeFirebase, getFirestore, getAuth } from '@almadar/db/firebase';
 export {
   setupEventBroadcast,
   getWebSocketServer,
@@ -74,8 +75,7 @@ export {
   ConflictError,
 } from './middleware/errorHandler.js';
 export { validateBody, validateQuery, validateParams } from './middleware/validation.js';
-export { authenticateFirebase, authenticateFirebaseForTenant, authenticateBearer, type TenantOf, type AuthOutcome } from './middleware/authenticateFirebase.js';
-export { resolveDevIdentity } from './middleware/devIdentity.js';
+export { authenticateFirebase, authenticateFirebaseForTenant, authenticateBearer, identifyBearer, type TenantOf, type AuthOutcome } from './middleware/authenticateFirebase.js';
 export { compressionMiddleware, compressionFilter } from './middleware/compression.js';
 
 // Services exports
@@ -101,34 +101,8 @@ export {
   resetSubstrateService,
   type SubstrateService,
 } from './services/substrate.js';
-export {
-  FirestorePersistence,
-  firestoreRows,
-  type AdminFirestore,
-  type FirestorePersistenceOptions,
-  type RowFirestore,
-  type RowCollection,
-  type RowDoc,
-} from './services/firestore/firestore-persistence.js';
-export { observedPersistence, RowQuotaExceededError, type ObservedPersistenceOptions } from './services/observed-persistence.js';
-export {
-  PostgresDataService,
-  type PostgresDataServiceOptions,
-  PostgresPersistence,
-  type PostgresPersistenceOptions,
-  ensureSchema,
-  diffSchema,
-  applySchemaEvolution,
-  type SchemaDiff,
-  type EvolutionPolicy,
-  type EvolutionReport,
-} from './services/postgres/index.js';
-export {
-  CouchDBDataService,
-  type CouchDBDataServiceOptions,
-  CouchDBPersistence,
-  type CouchDBPersistenceOptions,
-} from './services/couchdb/index.js';
+export { PostgresDataService, type PostgresDataServiceOptions, applySchemaEvolution } from './services/postgres/index.js';
+export { CouchDBDataService, type CouchDBDataServiceOptions } from './services/couchdb/index.js';
 
 // Compat re-exports — generated project code imports these constant names.
 // They are now lazy getters; usage like `dataService.getById(...)` works
@@ -262,11 +236,11 @@ export type { HookProvider, HookProviderResult, HookDispatch, HooksRouterOptions
 
 // Tenant credential store persistence (W4) — Firestore rows for
 // @almadar/integrations' CredentialStore (structural contract, no dep edge)
-export { FirestoreCredentialPersistence } from './lib/credentials.js';
+export { FirestoreCredentialPersistence } from '@almadar/db';
 export {
   FirestorePendingGrantStore,
   type FirestorePendingGrantStoreOptions,
   type GrantFirestore,
   type GrantDocRef,
   type GrantTransaction,
-} from './lib/pendingGrants.js';
+} from '@almadar/auth/server';

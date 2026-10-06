@@ -2,16 +2,14 @@
  * Postgres `DataService`: the DataService facade over `PostgresPersistence`, observed as
  * `postgres` calls. Kept as a class for its public name and `close()`.
  */
-import type { Pool } from 'pg';
 import type { StoreContract, StoreFilter } from '@almadar/core';
 import type { BaseEntity, DataService, PaginationOptions, PaginatedResult } from '../DataService.js';
 import { dataServiceOver } from '../data/data-service-over.js';
-import { observedPersistence } from '../observed-persistence.js';
-import { PostgresPersistence } from './postgres-persistence.js';
+import { observedPersistence, PostgresPersistence, type PostgresPersistenceOptions } from '@almadar/db';
 
 
 export interface PostgresDataServiceOptions {
-  pool: Pool;
+  pool: PostgresPersistenceOptions['pool'];
 }
 
 export class PostgresDataService implements DataService {

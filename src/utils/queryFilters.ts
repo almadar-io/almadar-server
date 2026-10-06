@@ -17,13 +17,15 @@
  * @packageDocumentation
  */
 
+import type { FieldValue } from '@almadar/core';
+
 /**
  * Parsed filter ready for Firestore query
  */
 export interface ParsedFilter {
   field: string;
   operator: FirestoreWhereFilterOp;
-  value: unknown;
+  value: FieldValue;
 }
 
 /**
@@ -148,17 +150,14 @@ export function parseQueryFilters(
 /**
  * Parse and coerce value based on operator type
  */
-function parseValue(value: unknown, operator: string): unknown {
+function parseValue(value: string | string[], operator: string): FieldValue {
   // Handle array values for 'in' operator
   if (operator === 'in' || operator === 'not_in' || operator === 'contains_any') {
     if (typeof value === 'string') {
       // Parse comma-separated values: "a,b,c" → ['a', 'b', 'c']
       return value.split(',').map(v => v.trim());
     }
-    if (Array.isArray(value)) {
-      return value;
-    }
-    return [value];
+    return value;
   }
 
   // Handle numeric values
