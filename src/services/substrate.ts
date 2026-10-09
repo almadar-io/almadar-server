@@ -1,7 +1,6 @@
 /**
  * Substrate service — the compiled-path backing for agent substrate
- * operators (session/*, workspace/*, behavior/*, compose/*,
- * validate/validate, integration/*).
+ * operators (session/*, workspace/*, integration/*).
  *
  * The interface is owned here (same pattern as DataService). The host
  * application provides a concrete implementation via
@@ -18,17 +17,10 @@ import type {
     AgentMemoryRecord,
     SessionHistoryEntry,
     ServiceCallResult,
-    BuilderResult,
-    ValidateResult,
-    ComposeAllResult,
-    ComposeChildrenResult,
-    LoloEmitResult,
     AnalysisResult,
     PlanSnapshot,
-    ComposeOptions,
     GitHubRepo,
     GitHubIssue,
-    TraitConfig,
     JsonValue,
 } from '@almadar/core';
 
@@ -56,23 +48,12 @@ export interface SubstrateService {
         writePlan(plan: PlanSnapshot): Promise<void>;
         archiveOrbital(name: string): Promise<void>;
     };
-    behavior: {
-        instantiate(behavior: string, config?: TraitConfig): Promise<BuilderResult>;
-        call(ref: string, method: string, args?: TraitConfig): Promise<ServiceCallResult>;
-        emitBody(orbitalName: string): Promise<LoloEmitResult>;
-    };
-    compose: {
-        composeAll(options: ComposeOptions): Promise<ComposeAllResult>;
-        composeChildren(options: ComposeOptions): Promise<ComposeChildrenResult>;
-    };
-    validate: {
-        validate(name: string): Promise<ValidateResult>;
-    };
     integration: {
         http(url: string, opts?: { method?: string; body?: JsonValue; headers?: Record<string, string> }): Promise<JsonValue>;
         githubGetRepo(owner: string, repo: string): Promise<GitHubRepo>;
         githubCreateIssue(owner: string, repo: string, title: string, body?: string): Promise<GitHubIssue>;
     };
+    /** Generic dispatch for the remaining substrate operators the compiled shell routes by name. */
     invoke(operator: string, args: JsonValue[]): Promise<ServiceCallResult>;
 }
 
