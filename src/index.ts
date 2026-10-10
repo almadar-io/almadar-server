@@ -75,7 +75,7 @@ export {
   ConflictError,
 } from './middleware/errorHandler.js';
 export { validateBody, validateQuery, validateParams } from './middleware/validation.js';
-export { authenticateFirebase, authenticateFirebaseForTenant, authenticateBearer, identifyBearer, type TenantOf, type AuthOutcome } from './middleware/authenticateFirebase.js';
+export { authenticateFirebase, authenticateFirebaseForTenant, authenticateBearer, identifyBearer, installApiKeyLookup, type TenantOf, type AuthOutcome } from './middleware/authenticateFirebase.js';
 export { compressionMiddleware, compressionFilter } from './middleware/compression.js';
 
 // Services exports

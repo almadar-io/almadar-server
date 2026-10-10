@@ -96,3 +96,22 @@ describe('identifyBearer (routes open to anonymous visitors)', () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe('installApiKeyLookup', () => {
+  it('accepts an installed key and still refuses an unknown one', async () => {
+    const { installApiKeyLookup } = await import('../authenticateFirebase.js');
+    const { mintApiKey } = await import('@almadar/auth/server');
+    process.env.ALMADAR_API_KEY_SALT = 'abcdef0123456789';
+    const live = mintApiKey(process.env.ALMADAR_API_KEY_SALT);
+    const stranger = mintApiKey(process.env.ALMADAR_API_KEY_SALT);
+    installApiKeyLookup(async (hash) => (hash === live.keyHash ? { principal: 'team:t1', revoked: false, claims: { teamId: 't1' } } : null));
+    const ok = await request(appWith()).get('/me').set('Authorization', `Bearer ${live.plaintext}`);
+    const refused = await request(appWith()).get('/me').set('Authorization', `Bearer ${stranger.plaintext}`);
+    const idToken = await request(appWith()).get('/me').set('Authorization', 'Bearer project:alice');
+    expect(ok.status).toBe(200);
+    expect(ok.body).toEqual({ uid: 'team:t1', tenant: null });
+    expect(refused.status).toBe(401);
+    expect(idToken.body).toEqual({ uid: 'alice', tenant: null });
+    expect(verify).toHaveBeenCalledTimes(1);
+  });
+});
