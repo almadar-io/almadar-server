@@ -4,8 +4,7 @@
  *
  * The interface is owned here (same pattern as DataService). The host
  * application provides a concrete implementation via
- * `setSubstrateService()` at startup — typically wired from
- * `@almadar-io/rabit` runtime services or a custom adapter.
+ * `setSubstrateService()` at startup.
  *
  * The generated server code calls `getSubstrateService()` at runtime;
  * without a registered implementation, it throws on first access.

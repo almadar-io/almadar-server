@@ -2,8 +2,6 @@
  * Multi-User Middleware
  *
  * Provides user isolation and session ownership using Firebase Auth.
- * The DeepAgent `MultiUserManager` dependency has been removed;
- * ownership is now handled by the caller or by rabit's workspace model.
  *
  * @packageDocumentation
  */

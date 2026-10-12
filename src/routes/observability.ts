@@ -68,22 +68,4 @@ router.get('/health', async (_req, res) => {
   }
 });
 
-/**
- * GET /sessions/:threadId/telemetry - Get session telemetry
- */
-router.get('/sessions/:threadId/telemetry', async (_req, res) => {
-  res.status(501).json({
-    error: 'Session telemetry is deprecated. Use @almadar-io/rabit trace events instead.',
-  });
-});
-
-/**
- * GET /active-sessions - Get active sessions
- */
-router.get('/active-sessions', async (_req, res) => {
-  res.status(501).json({
-    error: 'Active sessions tracking is deprecated. Use @almadar-io/rabit SessionStore instead.',
-  });
-});
-
 export default router;

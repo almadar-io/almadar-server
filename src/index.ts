@@ -156,24 +156,6 @@ export {
   type PaginationParams,
 } from './utils/queryFilters.js';
 
-// ─── Rabit compatibility exports (replaces old @almadar-io/agent surface) ────
-
-export {
-  getOrbitalMemory,
-  resetOrbitalMemory,
-} from './deepagent/memory.js';
-export {
-  getSessionStore,
-  resetSessionStore,
-} from './deepagent/session.js';
-export {
-  createServerSkillAgent,
-} from './deepagent/skill-agent.js';
-export type {
-  SkillAgentResult,
-  SkillAgentOptions,
-} from './deepagent/skill-agent.js';
-
 export {
   multiUserMiddleware,
   verifyFirebaseAuth,
